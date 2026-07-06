@@ -165,6 +165,7 @@ function MainApp({ session }) {
     const { error } = await supabase.from("cuentas").insert({
       nombre: nuevaCuentaNombre.trim(),
       saldo: parseFloat(nuevaCuentaSaldo) || 0,
+      user_id: session.user.id,
     });
     if (error) { alert(error.message); return; }
     setNuevaCuentaNombre(""); setNuevaCuentaSaldo(""); setShowAddCuenta(false);
@@ -178,6 +179,7 @@ function MainApp({ session }) {
       banco: nuevaTarjetaBanco.trim(),
       linea_total: parseFloat(nuevaTarjetaLinea) || 0,
       saldo_usado: parseFloat(nuevaTarjetaUsado) || 0,
+      user_id: session.user.id,
     });
     if (error) { alert(error.message); return; }
     setNuevaTarjetaNombre(""); setNuevaTarjetaBanco(""); setNuevaTarjetaLinea(""); setNuevaTarjetaUsado("");
