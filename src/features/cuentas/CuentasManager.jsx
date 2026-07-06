@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
-import { fmt } from "../../shared/format";
+import { Plus } from "lucide-react";
+import CuentaRow from "./CuentaRow";
 
 export default function CuentasManager({ cuentas, session, addCuenta, deleteCuenta, onChange }) {
   const [nombre, setNombre] = useState("");
@@ -26,21 +26,11 @@ export default function CuentasManager({ cuentas, session, addCuenta, deleteCuen
   return (
     <>
       <div className="section-title" style={{ margin: "16px 0 4px" }}>Cuentas de ahorro</div>
-      {cuentas.map((c) => (
-        <div className="manage-row" key={c.id}>
-          <div>
-            <div className="manage-name">{c.nombre}</div>
-            <div className="manage-sub mono">{fmt(c.saldo)}</div>
-          </div>
-          <button
-            className="mov-del"
-            data-testid={`cuenta-delete-button-${c.id}`}
-            onClick={() => handleDelete(c.id)}
-          >
-            <Trash2 size={15} />
-          </button>
-        </div>
-      ))}
+      <div className="cuenta-list" style={{ padding: 0, marginBottom: 12 }}>
+        {cuentas.map((c) => (
+          <CuentaRow key={c.id} cuenta={c} onDelete={handleDelete} />
+        ))}
+      </div>
       {!showAdd ? (
         <button className="add-link" data-testid="cuentas-add-link" onClick={() => setShowAdd(true)}>
           <Plus size={13} /> agregar cuenta

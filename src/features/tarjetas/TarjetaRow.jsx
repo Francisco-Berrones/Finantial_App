@@ -1,3 +1,4 @@
+import { Trash2 } from "lucide-react";
 import { fmt } from "../../shared/format";
 
 const BANCO_ICON_CLASS = {
@@ -11,7 +12,7 @@ function iconClassFor(banco) {
   return BANCO_ICON_CLASS[key] || "";
 }
 
-export default function TarjetaRow({ tarjeta }) {
+export default function TarjetaRow({ tarjeta, onDelete }) {
   const disponible = tarjeta.linea_total - tarjeta.saldo_usado;
   return (
     <div className="tarjeta-row-card" data-testid={`tarjeta-row-${tarjeta.id}`}>
@@ -28,7 +29,17 @@ export default function TarjetaRow({ tarjeta }) {
             {tarjeta.banco && <div className="tarjeta-row-banco">{tarjeta.banco}</div>}
           </div>
         </div>
-        <div className="decorative-toggle" />
+        {onDelete ? (
+          <button
+            className="row-delete-btn"
+            data-testid={`tarjeta-row-delete-button-${tarjeta.id}`}
+            onClick={() => onDelete(tarjeta.id)}
+          >
+            <Trash2 size={14} />
+          </button>
+        ) : (
+          <div className="decorative-toggle" />
+        )}
       </div>
       <div className="tarjeta-row-stats">
         <div className="tarjeta-row-stat">

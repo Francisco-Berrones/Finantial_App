@@ -53,7 +53,7 @@ describe("TarjetasManager", () => {
         onChange={vi.fn()}
       />
     );
-    fireEvent.click(screen.getByTestId("tarjeta-card-visual-delete-button-2"));
+    fireEvent.click(screen.getByTestId("tarjeta-row-delete-button-2"));
     expect(deleteTarjeta).toHaveBeenCalledWith(2);
   });
 });

@@ -33,23 +33,23 @@ export default function MainApp({ session }) {
           --ink: #2B2A26; --ink-soft: #7A7365;
           --credito: #A8412B; --credito-soft: #E7CFC6;
           --ahorro: #2E6B52; --ahorro-soft: #D2E3D6;
-          font-family: Figtree, serif;
+          font-family: Figtree;
           color: var(--ink); background: var(--paper);
           min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative;
           padding-bottom: 84px; box-sizing: border-box;
         }
         .app-root * { box-sizing: border-box; }
-        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+        .mono { font-family: Figtree; font-variant-numeric: tabular-nums; }
         .header { padding: 22px 20px 14px; border-bottom: 1px solid var(--paper-line); display: flex; justify-content: space-between; align-items: flex-start; }
-        .header-eyebrow { font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 4px; }
+        .header-eyebrow { font-family: Figtree; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 4px; }
         .header-title { font-size: 26px; margin: 0; font-weight: normal; }
         .logout-btn { background: none; border: none; color: var(--ink-soft); cursor: pointer; margin-top: 4px; }
         .summary-row { display: flex; gap: 10px; padding: 16px 16px 4px; }
         .summary-box { flex: 1; background: var(--paper-card); border-radius: 4px; padding: 12px 14px; border-top: 3px solid var(--ahorro); }
         .summary-box.credito { border-top-color: var(--credito); }
-        .summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-family: ui-monospace, monospace; }
+        .summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-family: Figtree; }
         .summary-value { font-size: 20px; margin-top: 4px; }
-        .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); font-family: ui-monospace, monospace; margin: 20px 16px 8px; }
+        .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); font-family: Figtree; margin: 20px 16px 8px; }
         .ticket-row { display: flex; gap: 10px; padding: 0 16px; overflow-x: auto; }
         .ticket { min-width: 168px; background: var(--paper-card); border-radius: 6px; padding: 12px 14px 14px; position: relative; border: 1px solid var(--paper-line); flex-shrink: 0; }
         .ticket::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 6px; border-top: 1.5px dashed var(--paper-line); }
@@ -58,6 +58,7 @@ export default function MainApp({ session }) {
         .ticket-amount { font-size: 18px; margin-top: 2px; }
         .cuenta-list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
         .cuenta-row-card { background: var(--paper-card); border-radius: 16px; padding: 16px; border: 1px solid var(--paper-line); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .cuenta-row-top { display: flex; align-items: flex-start; justify-content: space-between; }
         .cuenta-row-name { font-size: 17px; font-weight: 700; }
         .cuenta-row-saldo { font-size: 15px; color: var(--ink-soft); margin-top: 4px; }
         .tarjeta-list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
@@ -76,6 +77,7 @@ export default function MainApp({ session }) {
         .decorative-toggle { width: 38px; height: 22px; border-radius: 11px; background: #E4E1D6; position: relative; flex-shrink: 0; }
         .decorative-toggle::before { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
         .decorative-toggle::after { content: ""; position: absolute; top: 4px; left: 12px; width: 14px; height: 14px; border-radius: 50%; background: #D8D5C9; }
+        .row-delete-btn { background: none; border: none; color: var(--ink-soft); padding: 4px; cursor: pointer; flex-shrink: 0; }
         .tarjeta-row-stats { display: flex; }
         .tarjeta-row-stat { flex: 1; padding-left: 14px; border-left: 1px solid var(--paper-line); }
         .tarjeta-row-stat:first-child { padding-left: 0; border-left: none; }
@@ -83,7 +85,7 @@ export default function MainApp({ session }) {
         .tarjeta-row-stat-value { font-size: 17px; font-weight: 700; }
         .empty-state { margin: 30px 16px; padding: 24px 18px; border: 1.5px dashed var(--paper-line); border-radius: 6px; text-align: center; color: var(--ink-soft); }
         .empty-state button { margin-top: 12px; }
-        .btn { font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid var(--ink); background: transparent; color: var(--ink); padding: 8px 14px; border-radius: 4px; cursor: pointer; }
+        .btn { font-family: Figtree; font-size: 13px; border: 1px solid var(--ink); background: transparent; color: var(--ink); padding: 8px 14px; border-radius: 4px; cursor: pointer; }
         .btn:active { transform: scale(0.97); }
         .btn.dark { background: var(--ink); color: var(--paper-card); }
         .historial-filters { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px; }
@@ -100,7 +102,7 @@ export default function MainApp({ session }) {
         .mov-amount.ahorro { color: var(--ahorro); }
         .mov-del { background: none; border: none; color: var(--ink-soft); padding: 4px; cursor: pointer; }
         .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--paper-card); border-top: 1px solid var(--paper-line); display: flex; align-items: center; justify-content: space-around; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
-        .tab-btn { background: none; border: none; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: ui-monospace, monospace; font-size: 10px; cursor: pointer; padding: 4px 8px; }
+        .tab-btn { background: none; border: none; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: Figtree; font-size: 10px; cursor: pointer; padding: 4px 8px; }
         .tab-btn.active { color: var(--ink); }
         .fab { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: var(--paper-card); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; margin-top: -26px; box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
         .sheet-backdrop { position: fixed; inset: 0; background: rgba(30,28,22,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 40; }
@@ -112,25 +114,13 @@ export default function MainApp({ session }) {
         .action-btn .ico { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--credito-soft); color: var(--credito); flex-shrink: 0; }
         .action-btn .ico.ahorro { background: var(--ahorro-soft); color: var(--ahorro); }
         .target-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 14px; border-radius: 6px; border: 1px solid var(--paper-line); background: var(--paper); margin-bottom: 8px; cursor: pointer; font-family: Figtree; font-size: 15px; color: var(--ink); }
-        .amount-input { width: 100%; font-family: ui-monospace, monospace; font-size: 34px; border: none; border-bottom: 2px solid var(--ink); background: transparent; color: var(--ink); padding: 8px 0; margin: 10px 0 18px; outline: none; }
+        .amount-input { width: 100%; font-family: Figtree; font-size: 34px; border: none; border-bottom: 2px solid var(--ink); background: transparent; color: var(--ink); padding: 8px 0; margin: 10px 0 18px; outline: none; }
         .note-input { width: 100%; font-family: Figtree; font-size: 15px; border: 1px solid var(--paper-line); border-radius: 6px; padding: 10px 12px; background: var(--paper); color: var(--ink); margin-bottom: 16px; }
-        .field-label { font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+        .field-label { font-family: Figtree; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
         .manage-block { padding: 4px 16px 20px; }
-        .manage-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--paper-line); }
-        .manage-name { font-size: 15px; }
-        .manage-sub { font-size: 12px; color: var(--ink-soft); }
-        .card-visual { position: relative; background: linear-gradient(135deg, #3a3833, var(--ink) 70%); color: var(--paper-card); border-radius: 14px; padding: 16px 16px 14px; margin: 12px 0; box-shadow: 0 6px 14px rgba(0,0,0,0.22); }
-        .card-visual-top { display: flex; align-items: center; justify-content: space-between; }
-        .card-visual-banco { font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #C9C4B6; }
-        .card-visual-chip { width: 30px; height: 22px; border-radius: 5px; background: linear-gradient(135deg, #D9C77A, #B8A25A); }
-        .card-visual-name { font-size: 18px; margin: 22px 0 14px; }
-        .card-visual-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
-        .card-visual-amount { font-size: 17px; }
-        .card-visual-total { font-family: ui-monospace, monospace; font-size: 11px; color: #C9C4B6; margin-top: 2px; }
-        .card-visual-del { position: absolute; top: 14px; right: 14px; background: rgba(246,243,233,0.14); border: none; color: var(--paper-card); padding: 6px; border-radius: 50%; cursor: pointer; display: flex; }
         .form-box { background: var(--paper-card); border: 1px solid var(--paper-line); border-radius: 6px; padding: 14px; margin: 10px 0 18px; }
         .form-box input { width: 100%; font-family: Figtree; font-size: 14px; border: 1px solid var(--paper-line); border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; background: var(--paper); color: var(--ink); }
-        .add-link { font-family: ui-monospace, monospace; font-size: 12px; color: var(--ink-soft); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 6px 16px 0; }
+        .add-link { font-family: Figtree; font-size: 12px; color: var(--ink-soft); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 6px 16px 0; }
         .nuevo-mov-header { padding: 22px 20px 14px; border-bottom: 1px solid var(--paper-line); display: flex; align-items: center; gap: 12px; }
         .nuevo-mov-back { background: none; border: none; color: var(--ink); cursor: pointer; display: flex; padding: 0; }
         .nuevo-mov-title { font-size: 18px; font-weight: 700; }
@@ -152,7 +142,7 @@ export default function MainApp({ session }) {
         .select-wrapper { position: relative; margin-bottom: 16px; }
         .target-select { width: 100%; appearance: none; font-family: Figtree; font-size: 15px; border: 1px solid var(--paper-line); border-radius: 10px; padding: 14px 36px 14px 14px; background: var(--paper-card); color: var(--ink); }
         .select-chevron { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
-        .amount-input-flat { width: 100%; font-family: ui-monospace, monospace; font-size: 30px; font-weight: 700; border: none; border-radius: 10px; background: var(--paper-card); color: var(--ink); padding: 18px 14px; margin-bottom: 16px; outline: none; }
+        .amount-input-flat { width: 100%; font-family: Figtree; font-size: 30px; font-weight: 700; border: none; border-radius: 10px; background: var(--paper-card); color: var(--ink); padding: 18px 14px; margin-bottom: 16px; outline: none; }
         .registrar-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: Figtree; font-weight: 700; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; padding: 15px 0; border-radius: 30px; border: none; background: var(--ahorro); color: #fff; cursor: pointer; }
         .registrar-btn:active { transform: scale(0.98); }
       `}</style>
@@ -173,7 +163,7 @@ export default function MainApp({ session }) {
           <div className="header">
             <div>
               <p className="header-eyebrow">Registro personal · {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}</p>
-              <h1 className="header-title">Mi cartera</h1>
+              <h1 className="header-title"><b>FinTrack</b></h1>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
               {view === "cuentas" && (
