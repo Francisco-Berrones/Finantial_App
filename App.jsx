@@ -270,6 +270,15 @@ function MainApp({ session }) {
         .manage-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--paper-line); }
         .manage-name { font-size: 15px; }
         .manage-sub { font-size: 12px; color: var(--ink-soft); }
+        .card-visual { position: relative; background: linear-gradient(135deg, #3a3833, var(--ink) 70%); color: var(--paper-card); border-radius: 14px; padding: 16px 16px 14px; margin: 12px 0; box-shadow: 0 6px 14px rgba(0,0,0,0.22); }
+        .card-visual-top { display: flex; align-items: center; justify-content: space-between; }
+        .card-visual-banco { font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #C9C4B6; }
+        .card-visual-chip { width: 30px; height: 22px; border-radius: 5px; background: linear-gradient(135deg, #D9C77A, #B8A25A); }
+        .card-visual-name { font-size: 18px; margin: 22px 0 14px; }
+        .card-visual-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
+        .card-visual-amount { font-size: 17px; }
+        .card-visual-total { font-family: ui-monospace, monospace; font-size: 11px; color: #C9C4B6; margin-top: 2px; }
+        .card-visual-del { position: absolute; top: 14px; right: 14px; background: rgba(246,243,233,0.14); border: none; color: var(--paper-card); padding: 6px; border-radius: 50%; cursor: pointer; display: flex; }
         .form-box { background: var(--paper-card); border: 1px solid var(--paper-line); border-radius: 6px; padding: 14px; margin: 10px 0 18px; }
         .form-box input { width: 100%; font-family: Georgia, serif; font-size: 14px; border: 1px solid var(--paper-line); border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; background: var(--paper); color: var(--ink); }
         .add-link { font-family: ui-monospace, monospace; font-size: 12px; color: var(--ink-soft); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 6px 16px 0; }
@@ -418,12 +427,20 @@ function MainApp({ session }) {
 
               <div className="section-title" style={{ margin: "24px 0 4px" }}>Tarjetas de crédito</div>
               {tarjetas.map((t) => (
-                <div className="manage-row" key={t.id}>
-                  <div>
-                    <div className="manage-name">{t.nombre}{t.banco ? ` · ${t.banco}` : ""}</div>
-                    <div className="manage-sub mono">{fmt(t.saldo_usado)} usado de {fmt(t.linea_total)}</div>
+                <div className="card-visual" key={t.id}>
+                  <button className="card-visual-del" onClick={() => deleteTarjeta(t.id)}><Trash2 size={14} /></button>
+                  <div className="card-visual-top">
+                    <span className="card-visual-banco">{t.banco || "Tarjeta"}</span>
+                    <div className="card-visual-chip" />
                   </div>
-                  <button className="mov-del" onClick={() => deleteTarjeta(t.id)}><Trash2 size={15} /></button>
+                  <div className="card-visual-name">{t.nombre}</div>
+                  <div className="card-visual-bottom">
+                    <div>
+                      <div className="card-visual-amount mono">{fmt(t.linea_total - t.saldo_usado)} disponible</div>
+                      <div className="card-visual-total mono">de {fmt(t.linea_total)} · usado {fmt(t.saldo_usado)}</div>
+                    </div>
+                    <CreditCard size={20} />
+                  </div>
                 </div>
               ))}
               {!showAddTarjeta ? (
