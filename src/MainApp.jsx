@@ -1,0 +1,257 @@
+import { useState, useEffect, useCallback } from "react";
+import { Plus, Home, Clock, Landmark, LogOut } from "lucide-react";
+import { supabase } from "./shared/lib/supabaseClient";
+import { useCuentas } from "./features/cuentas/useCuentas";
+import { useTarjetas } from "./features/tarjetas/useTarjetas";
+import { useMovimientos } from "./features/movimientos/useMovimientos";
+import InicioView from "./pages/InicioView";
+import HistorialView from "./features/movimientos/HistorialView";
+import CuentasManager from "./features/cuentas/CuentasManager";
+import TarjetasManager from "./features/tarjetas/TarjetasManager";
+import NuevoMovimientoView from "./features/movimientos/NuevoMovimientoView";
+
+export default function MainApp({ session }) {
+  const { cuentas, fetchCuentas, addCuenta, deleteCuenta } = useCuentas();
+  const { tarjetas, fetchTarjetas, addTarjeta, deleteTarjeta } = useTarjetas();
+  const { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento } = useMovimientos();
+
+  const [view, setView] = useState("inicio");
+  const [cargando, setCargando] = useState(true);
+
+  const fetchAll = useCallback(async () => {
+    await Promise.all([fetchCuentas(), fetchTarjetas(), fetchMovimientos()]);
+    setCargando(false);
+  }, [fetchCuentas, fetchTarjetas, fetchMovimientos]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  return (
+    <div className="app-root">
+      <style>{`
+        .app-root {
+          --paper: #DEDACA; --paper-card: #F6F3E9; --paper-line: #CBC3AC;
+          --ink: #2B2A26; --ink-soft: #7A7365;
+          --credito: #A8412B; --credito-soft: #E7CFC6;
+          --ahorro: #2E6B52; --ahorro-soft: #D2E3D6;
+          font-family: Figtree, serif;
+          color: var(--ink); background: var(--paper);
+          min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative;
+          padding-bottom: 84px; box-sizing: border-box;
+        }
+        .app-root * { box-sizing: border-box; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-variant-numeric: tabular-nums; }
+        .header { padding: 22px 20px 14px; border-bottom: 1px solid var(--paper-line); display: flex; justify-content: space-between; align-items: flex-start; }
+        .header-eyebrow { font-family: ui-monospace, monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 4px; }
+        .header-title { font-size: 26px; margin: 0; font-weight: normal; }
+        .logout-btn { background: none; border: none; color: var(--ink-soft); cursor: pointer; margin-top: 4px; }
+        .summary-row { display: flex; gap: 10px; padding: 16px 16px 4px; }
+        .summary-box { flex: 1; background: var(--paper-card); border-radius: 4px; padding: 12px 14px; border-top: 3px solid var(--ahorro); }
+        .summary-box.credito { border-top-color: var(--credito); }
+        .summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); font-family: ui-monospace, monospace; }
+        .summary-value { font-size: 20px; margin-top: 4px; }
+        .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-soft); font-family: ui-monospace, monospace; margin: 20px 16px 8px; }
+        .ticket-row { display: flex; gap: 10px; padding: 0 16px; overflow-x: auto; }
+        .ticket { min-width: 168px; background: var(--paper-card); border-radius: 6px; padding: 12px 14px 14px; position: relative; border: 1px solid var(--paper-line); flex-shrink: 0; }
+        .ticket::after { content: ""; position: absolute; left: 8px; right: 8px; bottom: 6px; border-top: 1.5px dashed var(--paper-line); }
+        .ticket-icon { color: var(--ink-soft); margin-bottom: 8px; }
+        .ticket-name { font-size: 13px; color: var(--ink-soft); }
+        .ticket-amount { font-size: 18px; margin-top: 2px; }
+        .cuenta-list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
+        .cuenta-row-card { background: var(--paper-card); border-radius: 16px; padding: 16px; border: 1px solid var(--paper-line); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .cuenta-row-name { font-size: 17px; font-weight: 700; }
+        .cuenta-row-saldo { font-size: 15px; color: var(--ink-soft); margin-top: 4px; }
+        .tarjeta-list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
+        .tarjeta-row-card { background: var(--paper-card); border-radius: 16px; padding: 16px; border: 1px solid var(--paper-line); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .tarjeta-row-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
+        .tarjeta-row-left { display: flex; align-items: center; gap: 12px; }
+        .tarjeta-row-icon { width: 52px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #E8CE85, #B8934A); position: relative; flex-shrink: 0; }
+        .tarjeta-row-icon--banorte { background: linear-gradient(135deg, #E8574A, #9E2B22); }
+        .tarjeta-row-icon--revolut { background: linear-gradient(135deg, #E4E4E4, #9A9A9A); }
+        .tarjeta-row-icon--nu { background: linear-gradient(135deg, #A855C9, #6B1FA0); }
+        .tarjeta-row-icon-dots { position: absolute; left: 6px; bottom: 6px; display: flex; }
+        .tarjeta-row-icon-dots span { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,0.75); }
+        .tarjeta-row-icon-dots span:last-child { margin-left: -4px; background: rgba(255,255,255,0.5); }
+        .tarjeta-row-name { font-size: 17px; font-weight: 700; }
+        .tarjeta-row-banco { font-size: 14px; color: var(--ink-soft); margin-top: 2px; }
+        .decorative-toggle { width: 38px; height: 22px; border-radius: 11px; background: #E4E1D6; position: relative; flex-shrink: 0; }
+        .decorative-toggle::before { content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+        .decorative-toggle::after { content: ""; position: absolute; top: 4px; left: 12px; width: 14px; height: 14px; border-radius: 50%; background: #D8D5C9; }
+        .tarjeta-row-stats { display: flex; }
+        .tarjeta-row-stat { flex: 1; padding-left: 14px; border-left: 1px solid var(--paper-line); }
+        .tarjeta-row-stat:first-child { padding-left: 0; border-left: none; }
+        .tarjeta-row-stat-label { font-size: 13px; color: var(--ink-soft); margin-bottom: 4px; }
+        .tarjeta-row-stat-value { font-size: 17px; font-weight: 700; }
+        .empty-state { margin: 30px 16px; padding: 24px 18px; border: 1.5px dashed var(--paper-line); border-radius: 6px; text-align: center; color: var(--ink-soft); }
+        .empty-state button { margin-top: 12px; }
+        .btn { font-family: ui-monospace, monospace; font-size: 13px; border: 1px solid var(--ink); background: transparent; color: var(--ink); padding: 8px 14px; border-radius: 4px; cursor: pointer; }
+        .btn:active { transform: scale(0.97); }
+        .btn.dark { background: var(--ink); color: var(--paper-card); }
+        .historial-filters { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px; }
+        .historial-filters .target-select { padding: 10px 32px 10px 12px; font-size: 13px; }
+        .mov-list { padding: 0 16px; }
+        .mov-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--paper-line); }
+        .mov-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--ahorro-soft); color: var(--ahorro); }
+        .mov-icon.credito { background: var(--credito-soft); color: var(--credito); }
+        .mov-body { flex: 1; min-width: 0; }
+        .mov-title { font-size: 14px; }
+        .mov-sub { font-size: 12px; color: var(--ink-soft); }
+        .mov-amount { font-size: 15px; white-space: nowrap; }
+        .mov-amount.credito { color: var(--credito); }
+        .mov-amount.ahorro { color: var(--ahorro); }
+        .mov-del { background: none; border: none; color: var(--ink-soft); padding: 4px; cursor: pointer; }
+        .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--paper-card); border-top: 1px solid var(--paper-line); display: flex; align-items: center; justify-content: space-around; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
+        .tab-btn { background: none; border: none; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: ui-monospace, monospace; font-size: 10px; cursor: pointer; padding: 4px 8px; }
+        .tab-btn.active { color: var(--ink); }
+        .fab { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: var(--paper-card); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; margin-top: -26px; box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+        .sheet-backdrop { position: fixed; inset: 0; background: rgba(30,28,22,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 40; }
+        .sheet { background: var(--paper-card); width: 100%; max-width: 480px; border-radius: 16px 16px 0 0; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); max-height: 82vh; overflow-y: auto; }
+        .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+        .sheet-title { font-size: 17px; }
+        .sheet-close { background: none; border: none; color: var(--ink-soft); cursor: pointer; }
+        .action-btn { width: 100%; text-align: left; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 6px; border: 1px solid var(--paper-line); background: var(--paper); margin-bottom: 8px; cursor: pointer; font-family: Figtree; font-size: 15px; color: var(--ink); }
+        .action-btn .ico { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--credito-soft); color: var(--credito); flex-shrink: 0; }
+        .action-btn .ico.ahorro { background: var(--ahorro-soft); color: var(--ahorro); }
+        .target-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 14px; border-radius: 6px; border: 1px solid var(--paper-line); background: var(--paper); margin-bottom: 8px; cursor: pointer; font-family: Figtree; font-size: 15px; color: var(--ink); }
+        .amount-input { width: 100%; font-family: ui-monospace, monospace; font-size: 34px; border: none; border-bottom: 2px solid var(--ink); background: transparent; color: var(--ink); padding: 8px 0; margin: 10px 0 18px; outline: none; }
+        .note-input { width: 100%; font-family: Figtree; font-size: 15px; border: 1px solid var(--paper-line); border-radius: 6px; padding: 10px 12px; background: var(--paper); color: var(--ink); margin-bottom: 16px; }
+        .field-label { font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+        .manage-block { padding: 4px 16px 20px; }
+        .manage-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--paper-line); }
+        .manage-name { font-size: 15px; }
+        .manage-sub { font-size: 12px; color: var(--ink-soft); }
+        .card-visual { position: relative; background: linear-gradient(135deg, #3a3833, var(--ink) 70%); color: var(--paper-card); border-radius: 14px; padding: 16px 16px 14px; margin: 12px 0; box-shadow: 0 6px 14px rgba(0,0,0,0.22); }
+        .card-visual-top { display: flex; align-items: center; justify-content: space-between; }
+        .card-visual-banco { font-family: ui-monospace, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #C9C4B6; }
+        .card-visual-chip { width: 30px; height: 22px; border-radius: 5px; background: linear-gradient(135deg, #D9C77A, #B8A25A); }
+        .card-visual-name { font-size: 18px; margin: 22px 0 14px; }
+        .card-visual-bottom { display: flex; align-items: flex-end; justify-content: space-between; }
+        .card-visual-amount { font-size: 17px; }
+        .card-visual-total { font-family: ui-monospace, monospace; font-size: 11px; color: #C9C4B6; margin-top: 2px; }
+        .card-visual-del { position: absolute; top: 14px; right: 14px; background: rgba(246,243,233,0.14); border: none; color: var(--paper-card); padding: 6px; border-radius: 50%; cursor: pointer; display: flex; }
+        .form-box { background: var(--paper-card); border: 1px solid var(--paper-line); border-radius: 6px; padding: 14px; margin: 10px 0 18px; }
+        .form-box input { width: 100%; font-family: Figtree; font-size: 14px; border: 1px solid var(--paper-line); border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; background: var(--paper); color: var(--ink); }
+        .add-link { font-family: ui-monospace, monospace; font-size: 12px; color: var(--ink-soft); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 6px 16px 0; }
+        .nuevo-mov-header { padding: 22px 20px 14px; border-bottom: 1px solid var(--paper-line); display: flex; align-items: center; gap: 12px; }
+        .nuevo-mov-back { background: none; border: none; color: var(--ink); cursor: pointer; display: flex; padding: 0; }
+        .nuevo-mov-title { font-size: 18px; font-weight: 700; }
+        .nuevo-mov-body { padding: 16px; }
+        .tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .tipo-card { border: none; border-radius: 12px; padding: 14px 10px; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; font-family: Figtree; }
+        .tipo-card:disabled { opacity: 0.4; cursor: not-allowed; }
+        .tipo-card.active { box-shadow: 0 0 0 2px var(--ink) inset; }
+        .tipo-card-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; }
+        .tipo-card-label { font-size: 12px; font-weight: 700; text-align: center; text-transform: uppercase; color: var(--ink); }
+        .tipo-card--credito { background: #EDE4F7; }
+        .tipo-card--credito .tipo-card-icon { background: #8E5FC7; }
+        .tipo-card--debito { background: #FBDCD5; }
+        .tipo-card--debito .tipo-card-icon { background: #D9534F; }
+        .tipo-card--pago { background: #DCEBFB; }
+        .tipo-card--pago .tipo-card-icon { background: #3B82C4; }
+        .tipo-card--ingreso { background: var(--ahorro-soft); }
+        .tipo-card--ingreso .tipo-card-icon { background: var(--ahorro); }
+        .select-wrapper { position: relative; margin-bottom: 16px; }
+        .target-select { width: 100%; appearance: none; font-family: Figtree; font-size: 15px; border: 1px solid var(--paper-line); border-radius: 10px; padding: 14px 36px 14px 14px; background: var(--paper-card); color: var(--ink); }
+        .select-chevron { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
+        .amount-input-flat { width: 100%; font-family: ui-monospace, monospace; font-size: 30px; font-weight: 700; border: none; border-radius: 10px; background: var(--paper-card); color: var(--ink); padding: 18px 14px; margin-bottom: 16px; outline: none; }
+        .registrar-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: Figtree; font-weight: 700; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; padding: 15px 0; border-radius: 30px; border: none; background: var(--ahorro); color: #fff; cursor: pointer; }
+        .registrar-btn:active { transform: scale(0.98); }
+      `}</style>
+
+      {view === "nuevoMovimiento" ? (
+        <NuevoMovimientoView
+          cuentas={cuentas}
+          tarjetas={tarjetas}
+          commitMovimiento={commitMovimiento}
+          onBack={() => setView("inicio")}
+          onSaved={async () => {
+            await fetchAll();
+            setView("inicio");
+          }}
+        />
+      ) : (
+        <>
+          <div className="header">
+            <div>
+              <p className="header-eyebrow">Registro personal · {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}</p>
+              <h1 className="header-title">Mi cartera</h1>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
+              {view === "cuentas" && (
+                <button className="logout-btn" data-testid="mainapp-logout-button" onClick={() => supabase.auth.signOut()} title="Cerrar sesión">
+                  <LogOut size={18} />
+                </button>
+              )}
+              <button
+                className="logout-btn"
+                style={view === "cuentas" ? { color: "var(--ink)" } : undefined}
+                data-testid="header-cuentas-button"
+                onClick={() => setView("cuentas")}
+                title="Cuentas y tarjetas"
+              >
+                <Landmark size={18} />
+              </button>
+            </div>
+          </div>
+
+          {cargando ? (
+            <div style={{ padding: 24, color: "var(--ink-soft)" }}>Cargando...</div>
+          ) : (
+            <>
+              {view === "inicio" && (
+                <InicioView
+                  cuentas={cuentas}
+                  tarjetas={tarjetas}
+                  movimientos={movimientos}
+                  onNavigateCuentas={() => setView("cuentas")}
+                />
+              )}
+
+              {view === "historial" && (
+                <HistorialView
+                  movimientos={movimientos}
+                  cuentas={cuentas}
+                  tarjetas={tarjetas}
+                  onDelete={async (mov) => {
+                    const ok = await deleteMovimiento(mov);
+                    if (ok) await fetchAll();
+                  }}
+                />
+              )}
+
+              {view === "cuentas" && (
+                <div className="manage-block">
+                  <CuentasManager
+                    cuentas={cuentas}
+                    session={session}
+                    addCuenta={addCuenta}
+                    deleteCuenta={deleteCuenta}
+                    onChange={fetchAll}
+                  />
+                  <TarjetasManager
+                    tarjetas={tarjetas}
+                    session={session}
+                    addTarjeta={addTarjeta}
+                    deleteTarjeta={deleteTarjeta}
+                    onChange={fetchAll}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="tabbar">
+            <button className={`tab-btn ${view === "inicio" ? "active" : ""}`} data-testid="tabbar-inicio-button" onClick={() => setView("inicio")}>
+              <Home size={19} /> Inicio
+            </button>
+            <button className="fab" data-testid="tabbar-fab-button" onClick={() => setView("nuevoMovimiento")} aria-label="Registrar movimiento">
+              <Plus size={24} />
+            </button>
+            <button className={`tab-btn ${view === "historial" ? "active" : ""}`} data-testid="tabbar-historial-button" onClick={() => setView("historial")}>
+              <Clock size={19} /> Historial
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
