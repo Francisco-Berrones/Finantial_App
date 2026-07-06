@@ -47,7 +47,7 @@ describe("CuentasManager", () => {
         onChange={vi.fn()}
       />
     );
-    fireEvent.click(screen.getByTestId("cuenta-delete-button-1"));
+    fireEvent.click(screen.getByTestId("cuenta-row-delete-button-1"));
     expect(deleteCuenta).toHaveBeenCalledWith(1);
   });
 });

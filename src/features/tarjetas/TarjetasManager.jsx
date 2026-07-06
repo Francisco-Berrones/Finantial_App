@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
-import TarjetaCardVisual from "./TarjetaCardVisual";
+import TarjetaRow from "./TarjetaRow";
 
 export default function TarjetasManager({ tarjetas, session, addTarjeta, deleteTarjeta, onChange }) {
   const [nombre, setNombre] = useState("");
@@ -30,9 +30,11 @@ export default function TarjetasManager({ tarjetas, session, addTarjeta, deleteT
   return (
     <>
       <div className="section-title" style={{ margin: "24px 0 4px" }}>Tarjetas de crédito</div>
-      {tarjetas.map((t) => (
-        <TarjetaCardVisual key={t.id} tarjeta={t} onDelete={handleDelete} />
-      ))}
+      <div className="tarjeta-list" style={{ padding: 0, marginBottom: 12 }}>
+        {tarjetas.map((t) => (
+          <TarjetaRow key={t.id} tarjeta={t} onDelete={handleDelete} />
+        ))}
+      </div>
       {!showAdd ? (
         <button className="add-link" data-testid="tarjetas-add-link" onClick={() => setShowAdd(true)}>
           <Plus size={13} /> agregar tarjeta
