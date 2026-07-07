@@ -48,7 +48,7 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
 
   const movimientosFiltrados = movimientos.filter((m) => {
     if (tipoFiltro !== "todos" && m.tipo_accion !== tipoFiltro) return false;
-    if (targetFiltro !== "todos" && m.target_id !== targetFiltro) return false;
+    if (targetFiltro !== "todos" && m.target_id !== targetFiltro && m.origen_cuenta_id !== targetFiltro) return false;
     if (!fechaCumpleFiltro(m.fecha, fechaFiltro)) return false;
     return true;
   });

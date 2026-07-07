@@ -11,12 +11,13 @@ const TIPO_STYLES = {
   ingreso_cuenta: { className: "tipo-card--ingreso", icon: DollarSign },
 };
 
-export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimiento, commitPagoConAsignacion, onBack, onSaved }) {
+export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimiento, commitPagoTarjeta, onBack, onSaved }) {
   const [accion, setAccion] = useState("gasto_credito");
   const [targetId, setTargetId] = useState("");
   const [monto, setMonto] = useState("");
   const [nota, setNota] = useState("");
   const [asignaciones, setAsignaciones] = useState({});
+  const [origenCuentaId, setOrigenCuentaId] = useState("");
 
   const esPagoTarjeta = accion === "pago_tarjeta";
   const { compras: comprasMsi, fetchMsi } = useMsiDetalle(esPagoTarjeta ? targetId : null);
@@ -27,6 +28,7 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
 
   useEffect(() => {
     setAsignaciones({});
+    setOrigenCuentaId("");
   }, [targetId]);
 
   const hayCuentas = cuentas.length > 0;
@@ -44,11 +46,17 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
   };
 
   const handleGuardar = async () => {
-    if (esPagoTarjeta && comprasMsi.length > 0) {
+    if (esPagoTarjeta) {
       const listaAsignaciones = Object.entries(asignaciones)
         .filter(([, v]) => parseFloat(v) > 0)
         .map(([compra_id, v]) => ({ compra_id, monto: parseFloat(v) }));
-      const ok = await commitPagoConAsignacion({ tarjetaId: targetId, monto: montoTotalPago, asignaciones: listaAsignaciones, nota });
+      const ok = await commitPagoTarjeta({
+        tarjetaId: targetId,
+        monto: montoTotalPago,
+        origenCuentaId: origenCuentaId || null,
+        asignaciones: listaAsignaciones,
+        nota,
+      });
       if (ok) await onSaved();
       return;
     }
@@ -108,6 +116,26 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
           </select>
           <ChevronDown size={16} className="select-chevron" />
         </div>
+
+        {esPagoTarjeta && (
+          <>
+            <div className="field-label" style={{ margin: "0 0 8px" }}>¿De dónde sale el dinero?</div>
+            <div className="select-wrapper">
+              <select
+                className="target-select"
+                data-testid="nuevo-mov-origen-select"
+                value={origenCuentaId}
+                onChange={(e) => setOrigenCuentaId(e.target.value)}
+              >
+                <option value="">Efectivo / fuera del sistema</option>
+                {cuentas.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="select-chevron" />
+            </div>
+          </>
+        )}
 
         {esPagoTarjeta && comprasMsi.length > 0 && (
           <div className="field-label" style={{ margin: "0 0 8px" }}>Pago al saldo general (opcional)</div>

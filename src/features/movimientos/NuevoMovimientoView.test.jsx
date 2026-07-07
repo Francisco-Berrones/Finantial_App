@@ -72,20 +72,20 @@ describe("NuevoMovimientoView", () => {
     expect(onBack).toHaveBeenCalled();
   });
 
-  it("registers a payment using only the MSI allocation field, with no general amount", async () => {
+  it("registers a payment using only the MSI allocation field, with no general amount, funded externally by default", async () => {
     useMsiDetalle.mockReturnValue({
       compras: [{ id: "msi-1", descripcion: "Laptop", mensualidad: 1000 }],
       cargando: false,
       fetchMsi: vi.fn(),
     });
-    const commitPagoConAsignacion = vi.fn().mockResolvedValue(true);
+    const commitPagoTarjeta = vi.fn().mockResolvedValue(true);
     const onSaved = vi.fn();
     render(
       <NuevoMovimientoView
         cuentas={cuentas}
         tarjetas={tarjetas}
         commitMovimiento={vi.fn()}
-        commitPagoConAsignacion={commitPagoConAsignacion}
+        commitPagoTarjeta={commitPagoTarjeta}
         onBack={vi.fn()}
         onSaved={onSaved}
       />
@@ -96,9 +96,10 @@ describe("NuevoMovimientoView", () => {
     fireEvent.change(screen.getByTestId("nuevo-mov-asignacion-input-msi-1"), { target: { value: "1000" } });
     fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
 
-    expect(commitPagoConAsignacion).toHaveBeenCalledWith({
+    expect(commitPagoTarjeta).toHaveBeenCalledWith({
       tarjetaId: 2,
       monto: 1000,
+      origenCuentaId: null,
       asignaciones: [{ compra_id: "msi-1", monto: 1000 }],
       nota: "",
     });
@@ -110,13 +111,13 @@ describe("NuevoMovimientoView", () => {
       cargando: false,
       fetchMsi: vi.fn(),
     });
-    const commitPagoConAsignacion = vi.fn().mockResolvedValue(true);
+    const commitPagoTarjeta = vi.fn().mockResolvedValue(true);
     render(
       <NuevoMovimientoView
         cuentas={cuentas}
         tarjetas={tarjetas}
         commitMovimiento={vi.fn()}
-        commitPagoConAsignacion={commitPagoConAsignacion}
+        commitPagoTarjeta={commitPagoTarjeta}
         onBack={vi.fn()}
         onSaved={vi.fn()}
       />
@@ -128,10 +129,40 @@ describe("NuevoMovimientoView", () => {
     fireEvent.change(screen.getByTestId("nuevo-mov-asignacion-input-msi-1"), { target: { value: "1000" } });
     fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
 
-    expect(commitPagoConAsignacion).toHaveBeenCalledWith({
+    expect(commitPagoTarjeta).toHaveBeenCalledWith({
       tarjetaId: 2,
       monto: 1200,
+      origenCuentaId: null,
       asignaciones: [{ compra_id: "msi-1", monto: 1000 }],
+      nota: "",
+    });
+  });
+
+  it("lets you pick a cuenta as the origin of a tarjeta payment", async () => {
+    useMsiDetalle.mockReturnValue({ compras: [], cargando: false, fetchMsi: vi.fn() });
+    const commitPagoTarjeta = vi.fn().mockResolvedValue(true);
+    render(
+      <NuevoMovimientoView
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        commitMovimiento={vi.fn()}
+        commitPagoTarjeta={commitPagoTarjeta}
+        onBack={vi.fn()}
+        onSaved={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("tipo-card-pago_tarjeta"));
+    fireEvent.change(screen.getByTestId("nuevo-mov-target-select"), { target: { value: "2" } });
+    fireEvent.change(screen.getByTestId("nuevo-mov-origen-select"), { target: { value: "1" } });
+    fireEvent.change(screen.getByTestId("nuevo-mov-monto-input"), { target: { value: "500" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
+
+    expect(commitPagoTarjeta).toHaveBeenCalledWith({
+      tarjetaId: 2,
+      monto: 500,
+      origenCuentaId: "1",
+      asignaciones: [],
       nota: "",
     });
   });
