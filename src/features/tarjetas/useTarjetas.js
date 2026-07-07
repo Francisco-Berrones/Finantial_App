@@ -13,12 +13,14 @@ export function useTarjetas() {
     setTarjetas(data || []);
   }, []);
 
-  const addTarjeta = useCallback(async ({ nombre, banco, lineaTotal, saldoUsado, userId }) => {
+  const addTarjeta = useCallback(async ({ nombre, banco, lineaTotal, saldoUsado, diaCorte, diaPago, userId }) => {
     const { error } = await supabase.from("tarjetas").insert({
       nombre: nombre.trim(),
       banco: banco.trim(),
       linea_total: parseFloat(lineaTotal) || 0,
       saldo_usado: parseFloat(saldoUsado) || 0,
+      dia_corte: diaCorte ? parseInt(diaCorte, 10) : null,
+      dia_pago: diaPago ? parseInt(diaPago, 10) : null,
       user_id: userId,
     });
     if (error) {
@@ -37,5 +39,20 @@ export function useTarjetas() {
     return true;
   }, []);
 
-  return { tarjetas, fetchTarjetas, addTarjeta, deleteTarjeta };
+  const updateCortePago = useCallback(async (id, { diaCorte, diaPago }) => {
+    const { error } = await supabase
+      .from("tarjetas")
+      .update({
+        dia_corte: diaCorte ? parseInt(diaCorte, 10) : null,
+        dia_pago: diaPago ? parseInt(diaPago, 10) : null,
+      })
+      .eq("id", id);
+    if (error) {
+      alert(error.message);
+      return false;
+    }
+    return true;
+  }, []);
+
+  return { tarjetas, fetchTarjetas, addTarjeta, deleteTarjeta, updateCortePago };
 }

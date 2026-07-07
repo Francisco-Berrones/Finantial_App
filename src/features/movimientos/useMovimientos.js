@@ -40,5 +40,33 @@ export function useMovimientos() {
     return true;
   }, []);
 
-  return { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento };
+  const commitPagoConAsignacion = useCallback(async ({ tarjetaId, monto, asignaciones, nota }) => {
+    const m = parseFloat(monto);
+    if (!tarjetaId) {
+      alert("Elige una tarjeta");
+      return false;
+    }
+    if (!m || m <= 0) {
+      alert("Ingresa el monto total del pago");
+      return false;
+    }
+    const asignado = asignaciones.reduce((s, a) => s + (Number(a.monto) || 0), 0);
+    if (asignado > m) {
+      alert(`Lo asignado a compras a meses (${asignado}) no puede ser mayor al monto total del pago (${m})`);
+      return false;
+    }
+    const { error } = await supabase.rpc("registrar_pago_con_asignacion", {
+      p_tarjeta_id: tarjetaId,
+      p_monto: m,
+      p_asignaciones: asignaciones,
+      p_nota: nota.trim(),
+    });
+    if (error) {
+      alert("No se pudo registrar el pago: " + error.message);
+      return false;
+    }
+    return true;
+  }, []);
+
+  return { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento, commitPagoConAsignacion };
 }

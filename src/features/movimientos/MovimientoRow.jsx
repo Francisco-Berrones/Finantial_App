@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { ArrowUpRight, ArrowDownRight, Trash2 } from "lucide-react";
 import { fmt, fmtFecha } from "../../shared/format";
 import { ACCIONES } from "../../shared/constants";
@@ -5,7 +6,7 @@ import { ACCIONES } from "../../shared/constants";
 export default function MovimientoRow({ movimiento, onDelete }) {
   const meta = ACCIONES[movimiento.tipo_accion];
   return (
-    <div className="mov-row">
+    <motion.div className="mov-row" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18 }}>
       <div className={`mov-icon ${meta.tono}`}>
         {meta.tono === "credito" ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
       </div>
@@ -23,6 +24,6 @@ export default function MovimientoRow({ movimiento, onDelete }) {
           <Trash2 size={15} />
         </button>
       )}
-    </div>
+    </motion.div>
   );
 }

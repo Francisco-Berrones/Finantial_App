@@ -14,6 +14,7 @@ describe("TarjetasManager", () => {
         addTarjeta={vi.fn()}
         deleteTarjeta={vi.fn()}
         onChange={vi.fn()}
+        onVerTarjeta={vi.fn()}
       />
     );
     expect(screen.getByText("Oro")).toBeInTheDocument();
@@ -28,6 +29,7 @@ describe("TarjetasManager", () => {
         addTarjeta={addTarjeta}
         deleteTarjeta={vi.fn()}
         onChange={vi.fn()}
+        onVerTarjeta={vi.fn()}
       />
     );
     fireEvent.click(screen.getByTestId("tarjetas-add-link"));
@@ -38,6 +40,36 @@ describe("TarjetasManager", () => {
       banco: "",
       lineaTotal: "",
       saldoUsado: "",
+      diaCorte: "",
+      diaPago: "",
+      userId: "user-1",
+    });
+  });
+
+  it("submits a new tarjeta with dia_corte/dia_pago", () => {
+    const addTarjeta = vi.fn().mockResolvedValue(true);
+    render(
+      <TarjetasManager
+        tarjetas={tarjetas}
+        session={session}
+        addTarjeta={addTarjeta}
+        deleteTarjeta={vi.fn()}
+        onChange={vi.fn()}
+        onVerTarjeta={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByTestId("tarjetas-add-link"));
+    fireEvent.change(screen.getByTestId("tarjetas-nombre-input"), { target: { value: "Platino" } });
+    fireEvent.change(screen.getByTestId("tarjetas-dia-corte-input"), { target: { value: "15" } });
+    fireEvent.change(screen.getByTestId("tarjetas-dia-pago-input"), { target: { value: "5" } });
+    fireEvent.click(screen.getByTestId("tarjetas-save-button"));
+    expect(addTarjeta).toHaveBeenCalledWith({
+      nombre: "Platino",
+      banco: "",
+      lineaTotal: "",
+      saldoUsado: "",
+      diaCorte: "15",
+      diaPago: "5",
       userId: "user-1",
     });
   });
@@ -51,6 +83,7 @@ describe("TarjetasManager", () => {
         addTarjeta={vi.fn()}
         deleteTarjeta={deleteTarjeta}
         onChange={vi.fn()}
+        onVerTarjeta={vi.fn()}
       />
     );
     fireEvent.click(screen.getByTestId("tarjeta-row-delete-button-2"));

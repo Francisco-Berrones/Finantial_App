@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronDown, CreditCard, DollarSign, Check } from "lucide-react";
 import { ACCIONES } from "../../shared/constants";
+import { fmt } from "../../shared/format";
+import { useMsiDetalle } from "../tarjetas/useMsiDetalle";
 
 const TIPO_STYLES = {
   gasto_credito: { className: "tipo-card--credito", icon: CreditCard },
@@ -9,15 +11,31 @@ const TIPO_STYLES = {
   ingreso_cuenta: { className: "tipo-card--ingreso", icon: DollarSign },
 };
 
-export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimiento, onBack, onSaved }) {
+export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimiento, commitPagoConAsignacion, onBack, onSaved }) {
   const [accion, setAccion] = useState("gasto_credito");
   const [targetId, setTargetId] = useState("");
   const [monto, setMonto] = useState("");
   const [nota, setNota] = useState("");
+  const [asignaciones, setAsignaciones] = useState({});
+
+  const esPagoTarjeta = accion === "pago_tarjeta";
+  const { compras: comprasMsi, fetchMsi } = useMsiDetalle(esPagoTarjeta ? targetId : null);
+
+  useEffect(() => {
+    if (esPagoTarjeta && targetId) fetchMsi();
+  }, [esPagoTarjeta, targetId, fetchMsi]);
+
+  useEffect(() => {
+    setAsignaciones({});
+  }, [targetId]);
 
   const hayCuentas = cuentas.length > 0;
   const hayTarjetas = tarjetas.length > 0;
   const targets = ACCIONES[accion].targetTipo === "tarjeta" ? tarjetas : cuentas;
+
+  const totalAsignado = Object.values(asignaciones).reduce((s, v) => s + (parseFloat(v) || 0), 0);
+  const montoGeneral = parseFloat(monto) || 0;
+  const montoTotalPago = montoGeneral + totalAsignado;
 
   const elegirAccion = (tipo, disabled) => {
     if (disabled) return;
@@ -26,6 +44,14 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
   };
 
   const handleGuardar = async () => {
+    if (esPagoTarjeta && comprasMsi.length > 0) {
+      const listaAsignaciones = Object.entries(asignaciones)
+        .filter(([, v]) => parseFloat(v) > 0)
+        .map(([compra_id, v]) => ({ compra_id, monto: parseFloat(v) }));
+      const ok = await commitPagoConAsignacion({ tarjetaId: targetId, monto: montoTotalPago, asignaciones: listaAsignaciones, nota });
+      if (ok) await onSaved();
+      return;
+    }
     const ok = await commitMovimiento({ accion, targetId, monto, nota });
     if (ok) await onSaved();
   };
@@ -83,6 +109,9 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
           <ChevronDown size={16} className="select-chevron" />
         </div>
 
+        {esPagoTarjeta && comprasMsi.length > 0 && (
+          <div className="field-label" style={{ margin: "0 0 8px" }}>Pago al saldo general (opcional)</div>
+        )}
         <input
           className="amount-input-flat"
           inputMode="decimal"
@@ -99,6 +128,31 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
           value={nota}
           onChange={(e) => setNota(e.target.value)}
         />
+
+        {esPagoTarjeta && comprasMsi.length > 0 && (
+          <div className="form-box" data-testid="nuevo-mov-asignacion-box">
+            <div className="field-label" style={{ marginBottom: 10 }}>Pagar compras a meses (independiente, opcional)</div>
+            {comprasMsi.map((c) => (
+              <div className="msi-asignacion-row" key={c.id}>
+                <span>
+                  {c.descripcion || "Compra a meses"}{" "}
+                  <span className="mov-sub">({fmt(c.mensualidad)}/mes · falta {fmt(c.saldo_pendiente)})</span>
+                </span>
+                <input
+                  className="msi-asignacion-input"
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  data-testid={`nuevo-mov-asignacion-input-${c.id}`}
+                  value={asignaciones[c.id] || ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^0-9.]/g, "");
+                    setAsignaciones((prev) => ({ ...prev, [c.id]: val }));
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         <button className="registrar-btn" data-testid="nuevo-mov-registrar-button" onClick={handleGuardar}>
           <Check size={16} /> Registrar

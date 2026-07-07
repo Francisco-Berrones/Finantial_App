@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Home, Clock, Landmark, LogOut } from "lucide-react";
 import { supabase } from "./shared/lib/supabaseClient";
 import { useCuentas } from "./features/cuentas/useCuentas";
@@ -9,14 +10,17 @@ import HistorialView from "./features/movimientos/HistorialView";
 import CuentasManager from "./features/cuentas/CuentasManager";
 import TarjetasManager from "./features/tarjetas/TarjetasManager";
 import NuevoMovimientoView from "./features/movimientos/NuevoMovimientoView";
+import TarjetaDetalleView from "./features/tarjetas/TarjetaDetalleView";
 
 export default function MainApp({ session }) {
   const { cuentas, fetchCuentas, addCuenta, deleteCuenta } = useCuentas();
-  const { tarjetas, fetchTarjetas, addTarjeta, deleteTarjeta } = useTarjetas();
-  const { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento } = useMovimientos();
+  const { tarjetas, fetchTarjetas, addTarjeta, deleteTarjeta, updateCortePago } = useTarjetas();
+  const { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento, commitPagoConAsignacion } = useMovimientos();
 
   const [view, setView] = useState("inicio");
   const [cargando, setCargando] = useState(true);
+  const [detalleTarjetaId, setDetalleTarjetaId] = useState(null);
+  const [viewAntesDetalle, setViewAntesDetalle] = useState("inicio");
 
   const fetchAll = useCallback(async () => {
     await Promise.all([fetchCuentas(), fetchTarjetas(), fetchMovimientos()]);
@@ -24,6 +28,24 @@ export default function MainApp({ session }) {
   }, [fetchCuentas, fetchTarjetas, fetchMovimientos]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const abrirDetalleTarjeta = (id) => {
+    setViewAntesDetalle(view);
+    setDetalleTarjetaId(id);
+    setView("tarjetaDetalle");
+  };
+
+  const screenVariants = {
+    initial: { opacity: 0, x: 24 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -24 },
+  };
+
+  const tabVariants = {
+    initial: { opacity: 0, y: 6 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -6 },
+  };
 
   return (
     <div className="app-root">
@@ -63,6 +85,13 @@ export default function MainApp({ session }) {
         .cuenta-row-saldo { font-size: 15px; color: var(--ink-soft); margin-top: 4px; }
         .tarjeta-list { display: flex; flex-direction: column; gap: 12px; padding: 0 16px; }
         .tarjeta-row-card { background: var(--paper-card); border-radius: 16px; padding: 16px; border: 1px solid var(--paper-line); box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+        .tarjeta-row-card--clickable { cursor: pointer; }
+        .msi-list { display: flex; flex-direction: column; gap: 10px; }
+        .msi-row-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+        .msi-row-bottom { display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
+        .msi-asignacion-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--paper-line); font-size: 14px; }
+        .msi-asignacion-row:last-of-type { border-bottom: none; }
+        .msi-asignacion-input { width: 100px; font-family: Figtree; font-size: 14px; border: 1px solid var(--paper-line); border-radius: 8px; padding: 8px 10px; background: var(--paper); color: var(--ink); text-align: right; }
         .tarjeta-row-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
         .tarjeta-row-left { display: flex; align-items: center; gap: 12px; }
         .tarjeta-row-icon { width: 52px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #E8CE85, #B8934A); position: relative; flex-shrink: 0; }
@@ -147,22 +176,41 @@ export default function MainApp({ session }) {
         .registrar-btn:active { transform: scale(0.98); }
       `}</style>
 
+      <AnimatePresence mode="wait">
       {view === "nuevoMovimiento" ? (
+        <motion.div key="nuevoMovimiento" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <NuevoMovimientoView
           cuentas={cuentas}
           tarjetas={tarjetas}
           commitMovimiento={commitMovimiento}
+          commitPagoConAsignacion={commitPagoConAsignacion}
           onBack={() => setView("inicio")}
           onSaved={async () => {
             await fetchAll();
             setView("inicio");
           }}
         />
+        </motion.div>
+      ) : view === "tarjetaDetalle" ? (
+        <motion.div key="tarjetaDetalle" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
+        <TarjetaDetalleView
+          tarjeta={tarjetas.find((t) => t.id === detalleTarjetaId)}
+          onBack={() => setView(viewAntesDetalle)}
+          onGuardarCortePago={async (id, datos) => {
+            const ok = await updateCortePago(id, datos);
+            if (ok) await fetchTarjetas();
+            return ok;
+          }}
+          onRegistrada={fetchAll}
+        />
+        </motion.div>
       ) : (
-        <>
+        <motion.div key="main" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
           <div className="header">
             <div>
-              <p className="header-eyebrow">Registro personal · {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}</p>
+              <p className="header-eyebrow" style={{ marginTop: 20 }}>
+                Registro personal · {new Date().toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" })}
+              </p>
               <h1 className="header-title"><b>FinTrack</b></h1>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
@@ -173,12 +221,12 @@ export default function MainApp({ session }) {
               )}
               <button
                 className="logout-btn"
-                style={view === "cuentas" ? { color: "var(--ink)" } : undefined}
+                style={{ marginTop: 32, ...(view === "cuentas" ? { color: "var(--ink)" } : {}) }}
                 data-testid="header-cuentas-button"
                 onClick={() => setView("cuentas")}
                 title="Cuentas y tarjetas"
               >
-                <Landmark size={18} />
+                <Landmark size={28} />
               </button>
             </div>
           </div>
@@ -186,47 +234,55 @@ export default function MainApp({ session }) {
           {cargando ? (
             <div style={{ padding: 24, color: "var(--ink-soft)" }}>Cargando...</div>
           ) : (
-            <>
+            <AnimatePresence mode="wait">
               {view === "inicio" && (
-                <InicioView
-                  cuentas={cuentas}
-                  tarjetas={tarjetas}
-                  movimientos={movimientos}
-                  onNavigateCuentas={() => setView("cuentas")}
-                />
+                <motion.div key="tab-inicio" variants={tabVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.18 }}>
+                  <InicioView
+                    cuentas={cuentas}
+                    tarjetas={tarjetas}
+                    movimientos={movimientos}
+                    onNavigateCuentas={() => setView("cuentas")}
+                    onVerTarjeta={abrirDetalleTarjeta}
+                  />
+                </motion.div>
               )}
 
               {view === "historial" && (
-                <HistorialView
-                  movimientos={movimientos}
-                  cuentas={cuentas}
-                  tarjetas={tarjetas}
-                  onDelete={async (mov) => {
-                    const ok = await deleteMovimiento(mov);
-                    if (ok) await fetchAll();
-                  }}
-                />
+                <motion.div key="tab-historial" variants={tabVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.18 }}>
+                  <HistorialView
+                    movimientos={movimientos}
+                    cuentas={cuentas}
+                    tarjetas={tarjetas}
+                    onDelete={async (mov) => {
+                      const ok = await deleteMovimiento(mov);
+                      if (ok) await fetchAll();
+                    }}
+                  />
+                </motion.div>
               )}
 
               {view === "cuentas" && (
-                <div className="manage-block">
-                  <CuentasManager
-                    cuentas={cuentas}
-                    session={session}
-                    addCuenta={addCuenta}
-                    deleteCuenta={deleteCuenta}
-                    onChange={fetchAll}
-                  />
-                  <TarjetasManager
-                    tarjetas={tarjetas}
-                    session={session}
-                    addTarjeta={addTarjeta}
-                    deleteTarjeta={deleteTarjeta}
-                    onChange={fetchAll}
-                  />
-                </div>
+                <motion.div key="tab-cuentas" variants={tabVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.18 }}>
+                  <div className="manage-block">
+                    <CuentasManager
+                      cuentas={cuentas}
+                      session={session}
+                      addCuenta={addCuenta}
+                      deleteCuenta={deleteCuenta}
+                      onChange={fetchAll}
+                    />
+                    <TarjetasManager
+                      tarjetas={tarjetas}
+                      session={session}
+                      addTarjeta={addTarjeta}
+                      deleteTarjeta={deleteTarjeta}
+                      onChange={fetchAll}
+                      onVerTarjeta={abrirDetalleTarjeta}
+                    />
+                  </div>
+                </motion.div>
               )}
-            </>
+            </AnimatePresence>
           )}
 
           <div className="tabbar">
@@ -240,8 +296,9 @@ export default function MainApp({ session }) {
               <Clock size={19} /> Historial
             </button>
           </div>
-        </>
+        </motion.div>
       )}
+      </AnimatePresence>
     </div>
   );
 }
