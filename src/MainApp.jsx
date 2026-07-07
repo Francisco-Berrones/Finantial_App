@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Home, Clock, Landmark, LogOut } from "lucide-react";
+import { Plus, Home, Clock, Landmark, LogOut, Bot } from "lucide-react";
 import { supabase } from "./shared/lib/supabaseClient";
 import { useCuentas } from "./features/cuentas/useCuentas";
 import { useTarjetas } from "./features/tarjetas/useTarjetas";
@@ -11,6 +11,7 @@ import CuentasManager from "./features/cuentas/CuentasManager";
 import TarjetasManager from "./features/tarjetas/TarjetasManager";
 import NuevoMovimientoView from "./features/movimientos/NuevoMovimientoView";
 import TarjetaDetalleView from "./features/tarjetas/TarjetaDetalleView";
+import AsesorChatView from "./features/asesor/AsesorChatView";
 
 export default function MainApp({ session }) {
   const { cuentas, fetchCuentas, addCuenta, deleteCuenta } = useCuentas();
@@ -185,6 +186,10 @@ export default function MainApp({ session }) {
           }}
         />
         </motion.div>
+      ) : view === "asesor" ? (
+        <motion.div key="asesor" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
+        <AsesorChatView onBack={() => setView("inicio")} />
+        </motion.div>
       ) : view === "tarjetaDetalle" ? (
         <motion.div key="tarjetaDetalle" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <TarjetaDetalleView
@@ -213,6 +218,15 @@ export default function MainApp({ session }) {
                   <LogOut size={18} />
                 </button>
               )}
+              <button
+                className="logout-btn"
+                style={{ marginTop: 32, ...(view === "asesor" ? { color: "var(--ink)" } : {}) }}
+                data-testid="header-asesor-button"
+                onClick={() => setView("asesor")}
+                title="Asesor"
+              >
+                <Bot size={26} />
+              </button>
               <button
                 className="logout-btn"
                 style={{ marginTop: 32, ...(view === "cuentas" ? { color: "var(--ink)" } : {}) }}
