@@ -18,7 +18,7 @@ export function useMsiDetalle(tarjetaId) {
     setCargando(false);
   }, [tarjetaId]);
 
-  const registrarCompra = useCallback(async ({ tarjetaId, monto, meses, descripcion }) => {
+  const registrarCompra = useCallback(async ({ tarjetaId, monto, meses, descripcion, categoriaId }) => {
     const m = parseFloat(monto);
     const mesesInt = parseInt(meses, 10);
     if (!m || m <= 0) {
@@ -34,6 +34,7 @@ export function useMsiDetalle(tarjetaId) {
       p_monto: m,
       p_meses: mesesInt,
       p_descripcion: descripcion.trim(),
+      p_categoria_id: categoriaId || null,
     });
     if (error) {
       alert("No se pudo registrar: " + error.message);

@@ -26,7 +26,20 @@ describe("diasHasta", () => {
   it("rolls over to next month when the día already passed", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 5, 25));
-    expect(diasHasta(5)).toBe(11);
+    expect(diasHasta(5)).toBe(10);
+  });
+
+  it("clamps día 30 to the last day of a short month (february, non-leap year)", () => {
+    vi.useFakeTimers();
+    // 2026 is not a leap year, so February has 28 days.
+    vi.setSystemTime(new Date(2026, 1, 20));
+    expect(diasHasta(30)).toBe(8); // 28 - 20
+  });
+
+  it("clamps día 31 to the last day of the month when rolling over into february", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 31));
+    expect(diasHasta(31)).toBe(0); // today already is the clamped 31st of january
   });
 });
 

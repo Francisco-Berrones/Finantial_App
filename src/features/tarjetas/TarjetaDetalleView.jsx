@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, Pencil, Plus } from "lucide-react";
+import { ChevronLeft, ChevronDown, Pencil, Plus } from "lucide-react";
 import { fmt } from "../../shared/format";
 import { diasHasta, formatDiasFaltantes } from "../../shared/dateUtils";
 import { useMsiDetalle } from "./useMsiDetalle";
 
-export default function TarjetaDetalleView({ tarjeta, onBack, onGuardarCortePago, onRegistrada }) {
+export default function TarjetaDetalleView({ tarjeta, categorias = [], crearCategoria, onBack, onGuardarCortePago, onRegistrada }) {
   const { compras, cargando, fetchMsi, registrarCompra } = useMsiDetalle(tarjeta?.id);
   const [editando, setEditando] = useState(false);
   const [diaCorte, setDiaCorte] = useState("");
@@ -15,6 +15,19 @@ export default function TarjetaDetalleView({ tarjeta, onBack, onGuardarCortePago
   const [descripcionMsi, setDescripcionMsi] = useState("");
   const [montoMsi, setMontoMsi] = useState("");
   const [mesesMsi, setMesesMsi] = useState("");
+  const [categoriaMsiId, setCategoriaMsiId] = useState("");
+  const [creandoCategoriaMsi, setCreandoCategoriaMsi] = useState(false);
+  const [nuevaCategoriaMsi, setNuevaCategoriaMsi] = useState("");
+
+  const handleCrearCategoriaMsi = async () => {
+    if (!nuevaCategoriaMsi.trim()) return;
+    const creada = await crearCategoria(nuevaCategoriaMsi);
+    if (creada) {
+      setCategoriaMsiId(creada.id);
+      setNuevaCategoriaMsi("");
+      setCreandoCategoriaMsi(false);
+    }
+  };
 
   useEffect(() => { fetchMsi(); }, [fetchMsi]);
 
@@ -40,11 +53,15 @@ export default function TarjetaDetalleView({ tarjeta, onBack, onGuardarCortePago
       monto: montoMsi,
       meses: mesesMsi,
       descripcion: descripcionMsi,
+      categoriaId: categoriaMsiId || null,
     });
     if (ok) {
       setDescripcionMsi("");
       setMontoMsi("");
       setMesesMsi("");
+      setCategoriaMsiId("");
+      setCreandoCategoriaMsi(false);
+      setNuevaCategoriaMsi("");
       setShowAddMsi(false);
       await fetchMsi();
       await onRegistrada?.();
@@ -219,6 +236,51 @@ export default function TarjetaDetalleView({ tarjeta, onBack, onGuardarCortePago
                 value={mesesMsi}
                 onChange={(e) => setMesesMsi(e.target.value.replace(/[^0-9]/g, ""))}
               />
+
+              {!creandoCategoriaMsi ? (
+                <div className="select-wrapper">
+                  <select
+                    className="target-select"
+                    data-testid="msi-categoria-select"
+                    value={categoriaMsiId}
+                    onChange={(e) => {
+                      if (e.target.value === "__nueva__") {
+                        setCreandoCategoriaMsi(true);
+                        return;
+                      }
+                      setCategoriaMsiId(e.target.value);
+                    }}
+                  >
+                    <option value="">Sin categoría</option>
+                    {categorias.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                    <option value="__nueva__">+ Nueva categoría...</option>
+                  </select>
+                  <ChevronDown size={16} className="select-chevron" />
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                  <input
+                    style={{ marginBottom: 0, flex: 1 }}
+                    placeholder="Nombre de la categoría"
+                    data-testid="msi-categoria-nueva-input"
+                    value={nuevaCategoriaMsi}
+                    onChange={(e) => setNuevaCategoriaMsi(e.target.value)}
+                  />
+                  <button className="btn dark" data-testid="msi-categoria-crear-button" onClick={handleCrearCategoriaMsi}>
+                    Agregar
+                  </button>
+                  <button
+                    className="btn"
+                    data-testid="msi-categoria-cancelar-button"
+                    onClick={() => { setCreandoCategoriaMsi(false); setNuevaCategoriaMsi(""); }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              )}
+
               <div style={{ display: "flex", gap: 8 }}>
                 <button className="btn dark" data-testid="msi-guardar-button" onClick={handleAddMsi}>Guardar</button>
                 <button className="btn" data-testid="msi-cancelar-button" onClick={() => setShowAddMsi(false)}>Cancelar</button>

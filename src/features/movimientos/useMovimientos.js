@@ -8,13 +8,13 @@ export function useMovimientos() {
   const fetchMovimientos = useCallback(async () => {
     const { data, error } = await supabase
       .from("movimientos")
-      .select("*")
+      .select("*, categoria:categorias(nombre)")
       .order("fecha", { ascending: false });
     if (error) console.error(error);
     setMovimientos(data || []);
   }, []);
 
-  const commitMovimiento = useCallback(async ({ accion, targetId, monto, nota }) => {
+  const commitMovimiento = useCallback(async ({ accion, targetId, monto, nota, categoriaId }) => {
     const m = parseFloat(monto);
     if (!m || m <= 0 || !targetId || !accion) return false;
     const { error } = await supabase.rpc("registrar_movimiento", {
@@ -23,6 +23,7 @@ export function useMovimientos() {
       p_target_id: targetId,
       p_monto: m,
       p_nota: nota.trim(),
+      p_categoria_id: categoriaId || null,
     });
     if (error) {
       alert("No se pudo guardar: " + error.message);

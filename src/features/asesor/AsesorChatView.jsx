@@ -1,25 +1,102 @@
-import { useState } from "react";
-import { ArrowLeft, Send } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ArrowLeft, List, Send } from "lucide-react";
 import { supabase } from "../../shared/lib/supabaseClient";
+import { useConversaciones } from "./useConversaciones";
+import { useChatMensajes } from "./useChatMensajes";
+import ConversacionesModal from "./ConversacionesModal";
 
-export default function AsesorChatView({ onBack }) {
-  const [mensajes, setMensajes] = useState([]);
+const HISTORIAL_MAX = 10;
+
+export default function AsesorChatView({ session, onBack }) {
+  const { conversaciones, fetchConversaciones, crearConversacion, deleteConversacion } = useConversaciones();
+  const { mensajes, setMensajes, fetchMensajes, guardarMensaje, ponerTituloSiEsPrimero } = useChatMensajes();
+
+  const [conversacionId, setConversacionId] = useState(null);
   const [pregunta, setPregunta] = useState("");
   const [enviando, setEnviando] = useState(false);
+  const [mostrarConversaciones, setMostrarConversaciones] = useState(false);
+  const [cargando, setCargando] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const lista = await fetchConversaciones();
+      let activa = lista[0];
+      if (!activa) {
+        activa = await crearConversacion(session.user.id);
+        if (activa) await fetchConversaciones();
+      }
+      if (activa) {
+        setConversacionId(activa.id);
+        await fetchMensajes(activa.id);
+      }
+      setCargando(false);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const seleccionarConversacion = async (id) => {
+    setConversacionId(id);
+    await fetchMensajes(id);
+    setMostrarConversaciones(false);
+  };
+
+  const nuevaConversacion = async () => {
+    const creada = await crearConversacion(session.user.id);
+    if (creada) {
+      await fetchConversaciones();
+      setConversacionId(creada.id);
+      setMensajes([]);
+    }
+    setMostrarConversaciones(false);
+  };
+
+  const eliminarConversacion = async (id) => {
+    const ok = await deleteConversacion(id);
+    if (!ok) return;
+    const lista = await fetchConversaciones();
+    if (id === conversacionId) {
+      const siguiente = lista[0];
+      if (siguiente) {
+        setConversacionId(siguiente.id);
+        await fetchMensajes(siguiente.id);
+      } else {
+        const creada = await crearConversacion(session.user.id);
+        if (creada) {
+          await fetchConversaciones();
+          setConversacionId(creada.id);
+          setMensajes([]);
+        }
+      }
+    }
+  };
 
   const enviar = async () => {
     const texto = pregunta.trim();
-    if (!texto || enviando) return;
-    setMensajes((m) => [...m, { rol: "usuario", texto }]);
+    if (!texto || enviando || !conversacionId) return;
+
+    const esPrimero = mensajes.length === 0;
+    const historial = mensajes.slice(-HISTORIAL_MAX).map((m) => ({ rol: m.rol, contenido: m.contenido }));
+
+    setMensajes((m) => [...m, { rol: "usuario", contenido: texto }]);
     setPregunta("");
     setEnviando(true);
-    const { data, error } = await supabase.functions.invoke("asesor-chat", { body: { pregunta: texto } });
+
+    await guardarMensaje({ conversacionId, userId: session.user.id, rol: "usuario", contenido: texto });
+    if (esPrimero) await ponerTituloSiEsPrimero(conversacionId, texto);
+
+    const { data, error } = await supabase.functions.invoke("asesor-chat", {
+      body: { pregunta: texto, historial },
+    });
     setEnviando(false);
+
     if (error || data?.error) {
-      setMensajes((m) => [...m, { rol: "asesor", texto: "No pude conectar con el asesor. Intenta de nuevo en un momento." }]);
+      setMensajes((m) => [...m, { rol: "asesor", contenido: "No pude conectar con el asesor. Intenta de nuevo en un momento." }]);
       return;
     }
-    setMensajes((m) => [...m, { rol: "asesor", texto: data.respuesta }]);
+
+    setMensajes((m) => [...m, { rol: "asesor", contenido: data.respuesta }]);
+    await guardarMensaje({ conversacionId, userId: session.user.id, rol: "asesor", contenido: data.respuesta });
+    await fetchConversaciones();
   };
 
   return (
@@ -28,7 +105,8 @@ export default function AsesorChatView({ onBack }) {
         .asesor-root { height: 100vh; height: 100dvh; display: flex; flex-direction: column; background: var(--paper); }
         .asesor-header { flex-shrink: 0; padding: 22px 20px 14px; border-bottom: 1px solid var(--paper-line); display: flex; align-items: center; gap: 12px; }
         .asesor-back { background: none; border: none; color: var(--ink); cursor: pointer; display: flex; padding: 0; }
-        .asesor-title { font-size: 18px; font-weight: 700; }
+        .asesor-title { font-size: 18px; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .asesor-history-btn { background: none; border: none; color: var(--ink); cursor: pointer; display: flex; padding: 0; }
         .asesor-body { flex: 1; min-height: 0; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
         .asesor-empty { color: var(--ink-soft); font-size: 14px; text-align: center; margin-top: 40px; }
         .asesor-msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; }
@@ -44,19 +122,24 @@ export default function AsesorChatView({ onBack }) {
         <button className="asesor-back" data-testid="asesor-back-button" onClick={onBack}>
           <ArrowLeft size={22} />
         </button>
-        <div className="asesor-title">Asesor</div>
+        <div className="asesor-title">
+          {conversaciones.find((c) => c.id === conversacionId)?.titulo || "Asesor"}
+        </div>
+        <button className="asesor-history-btn" data-testid="asesor-history-button" onClick={() => setMostrarConversaciones(true)}>
+          <List size={20} />
+        </button>
       </div>
 
       <div className="asesor-body">
-        {mensajes.length === 0 && (
+        {!cargando && mensajes.length === 0 && (
           <div className="asesor-empty">
             Pregúntame sobre tus tarjetas y cuentas, por ejemplo:
             <br />"¿Con cuál tarjeta me conviene pagar $2,500?"
           </div>
         )}
         {mensajes.map((m, i) => (
-          <div key={i} className={`asesor-msg ${m.rol}`} data-testid={`asesor-msg-${m.rol}`}>
-            {m.texto}
+          <div key={m.id || i} className={`asesor-msg ${m.rol}`} data-testid={`asesor-msg-${m.rol}`}>
+            {m.contenido}
           </div>
         ))}
         {enviando && <div className="asesor-msg asesor" data-testid="asesor-msg-cargando">Pensando...</div>}
@@ -80,6 +163,17 @@ export default function AsesorChatView({ onBack }) {
           <Send size={18} />
         </button>
       </div>
+
+      {mostrarConversaciones && (
+        <ConversacionesModal
+          conversaciones={conversaciones}
+          conversacionActualId={conversacionId}
+          onSeleccionar={seleccionarConversacion}
+          onNueva={nuevaConversacion}
+          onEliminar={eliminarConversacion}
+          onClose={() => setMostrarConversaciones(false)}
+        />
+      )}
     </div>
   );
 }
