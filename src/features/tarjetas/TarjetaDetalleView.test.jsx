@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import TarjetaDetalleView from "./TarjetaDetalleView";
 import { useMsiDetalle } from "./useMsiDetalle";
@@ -86,14 +86,53 @@ describe("TarjetaDetalleView", () => {
     fireEvent.change(screen.getByTestId("msi-descripcion-input"), { target: { value: "Laptop" } });
     fireEvent.change(screen.getByTestId("msi-monto-input"), { target: { value: "12000" } });
     fireEvent.change(screen.getByTestId("msi-meses-input"), { target: { value: "12" } });
-    await fireEvent.click(screen.getByTestId("msi-guardar-button"));
+    fireEvent.click(screen.getByTestId("msi-guardar-button"));
+
+    await waitFor(() => expect(onRegistrada).toHaveBeenCalled());
+    expect(registrarCompra).toHaveBeenCalledWith({
+      tarjetaId: "t1",
+      monto: "12000",
+      meses: "12",
+      descripcion: "Laptop",
+      categoriaId: null,
+    });
+  });
+
+  it("lets you pick a categoria for a compra a meses and create a new one inline", async () => {
+    const fetchMsi = vi.fn();
+    const registrarCompra = vi.fn().mockResolvedValue(true);
+    useMsiDetalle.mockReturnValue({ compras: [], cargando: false, fetchMsi, registrarCompra });
+    const crearCategoria = vi.fn().mockResolvedValue({ id: "cat-nueva", nombre: "Tecnología" });
+    const tarjeta = { id: "t1", nombre: "Oro", dia_corte: 15, dia_pago: 5 };
+    render(
+      <TarjetaDetalleView
+        tarjeta={tarjeta}
+        categorias={[]}
+        crearCategoria={crearCategoria}
+        onBack={vi.fn()}
+        onRegistrada={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("msi-add-link"));
+    fireEvent.change(screen.getByTestId("msi-categoria-select"), { target: { value: "__nueva__" } });
+    fireEvent.change(screen.getByTestId("msi-categoria-nueva-input"), { target: { value: "Tecnología" } });
+    fireEvent.click(screen.getByTestId("msi-categoria-crear-button"));
+
+    expect(crearCategoria).toHaveBeenCalledWith("Tecnología");
+
+    await screen.findByTestId("msi-categoria-select");
+    fireEvent.change(screen.getByTestId("msi-descripcion-input"), { target: { value: "Laptop" } });
+    fireEvent.change(screen.getByTestId("msi-monto-input"), { target: { value: "12000" } });
+    fireEvent.change(screen.getByTestId("msi-meses-input"), { target: { value: "12" } });
+    fireEvent.click(screen.getByTestId("msi-guardar-button"));
 
     expect(registrarCompra).toHaveBeenCalledWith({
       tarjetaId: "t1",
       monto: "12000",
       meses: "12",
       descripcion: "Laptop",
+      categoriaId: "cat-nueva",
     });
-    expect(onRegistrada).toHaveBeenCalled();
   });
 });

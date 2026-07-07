@@ -54,6 +54,7 @@ describe("NuevoMovimientoView", () => {
       targetId: 1,
       monto: "250",
       nota: "",
+      categoriaId: null,
     });
   });
 
@@ -164,6 +165,88 @@ describe("NuevoMovimientoView", () => {
       origenCuentaId: "1",
       asignaciones: [],
       nota: "",
+    });
+  });
+
+  it("lets you pick a categoria for a gasto_credito and sends it along", () => {
+    const commitMovimiento = vi.fn().mockResolvedValue(true);
+    const categorias = [{ id: "cat-1", nombre: "Comida" }];
+    render(
+      <NuevoMovimientoView
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        categorias={categorias}
+        commitMovimiento={commitMovimiento}
+        onBack={vi.fn()}
+        onSaved={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByTestId("nuevo-mov-target-select"), { target: { value: "2" } });
+    fireEvent.change(screen.getByTestId("nuevo-mov-categoria-select"), { target: { value: "cat-1" } });
+    fireEvent.change(screen.getByTestId("nuevo-mov-monto-input"), { target: { value: "300" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
+
+    expect(commitMovimiento).toHaveBeenCalledWith({
+      accion: "gasto_credito",
+      targetId: 2,
+      monto: "300",
+      nota: "",
+      categoriaId: "cat-1",
+    });
+  });
+
+  it("does not show a categoria selector for pago_tarjeta or ingreso_cuenta", () => {
+    render(
+      <NuevoMovimientoView
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        categorias={[]}
+        commitMovimiento={vi.fn()}
+        commitPagoTarjeta={vi.fn()}
+        onBack={vi.fn()}
+        onSaved={vi.fn()}
+      />
+    );
+    fireEvent.click(screen.getByTestId("tipo-card-pago_tarjeta"));
+    expect(screen.queryByTestId("nuevo-mov-categoria-select")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("tipo-card-ingreso_cuenta"));
+    expect(screen.queryByTestId("nuevo-mov-categoria-select")).not.toBeInTheDocument();
+  });
+
+  it("creates a new categoria inline and selects it", async () => {
+    const commitMovimiento = vi.fn().mockResolvedValue(true);
+    const crearCategoria = vi.fn().mockResolvedValue({ id: "cat-nueva", nombre: "Mascotas" });
+    render(
+      <NuevoMovimientoView
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        categorias={[]}
+        crearCategoria={crearCategoria}
+        commitMovimiento={commitMovimiento}
+        onBack={vi.fn()}
+        onSaved={vi.fn()}
+      />
+    );
+
+    fireEvent.change(screen.getByTestId("nuevo-mov-target-select"), { target: { value: "2" } });
+    fireEvent.change(screen.getByTestId("nuevo-mov-categoria-select"), { target: { value: "__nueva__" } });
+    fireEvent.change(screen.getByTestId("nuevo-mov-categoria-nueva-input"), { target: { value: "Mascotas" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-categoria-crear-button"));
+
+    expect(crearCategoria).toHaveBeenCalledWith("Mascotas");
+
+    await screen.findByTestId("nuevo-mov-categoria-select");
+    fireEvent.change(screen.getByTestId("nuevo-mov-monto-input"), { target: { value: "150" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
+
+    expect(commitMovimiento).toHaveBeenCalledWith({
+      accion: "gasto_credito",
+      targetId: 2,
+      monto: "150",
+      nota: "",
+      categoriaId: "cat-nueva",
     });
   });
 });

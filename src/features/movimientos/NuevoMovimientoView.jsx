@@ -11,15 +11,19 @@ const TIPO_STYLES = {
   ingreso_cuenta: { className: "tipo-card--ingreso", icon: DollarSign },
 };
 
-export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimiento, commitPagoTarjeta, onBack, onSaved }) {
+export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = [], crearCategoria, commitMovimiento, commitPagoTarjeta, onBack, onSaved }) {
   const [accion, setAccion] = useState("gasto_credito");
   const [targetId, setTargetId] = useState("");
   const [monto, setMonto] = useState("");
   const [nota, setNota] = useState("");
   const [asignaciones, setAsignaciones] = useState({});
   const [origenCuentaId, setOrigenCuentaId] = useState("");
+  const [categoriaId, setCategoriaId] = useState("");
+  const [creandoCategoria, setCreandoCategoria] = useState(false);
+  const [nuevaCategoria, setNuevaCategoria] = useState("");
 
   const esPagoTarjeta = accion === "pago_tarjeta";
+  const requiereCategoria = accion === "gasto_credito" || accion === "gasto_debito";
   const { compras: comprasMsi, fetchMsi } = useMsiDetalle(esPagoTarjeta ? targetId : null);
 
   useEffect(() => {
@@ -30,6 +34,22 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
     setAsignaciones({});
     setOrigenCuentaId("");
   }, [targetId]);
+
+  useEffect(() => {
+    setCategoriaId("");
+    setCreandoCategoria(false);
+    setNuevaCategoria("");
+  }, [accion]);
+
+  const handleCrearCategoria = async () => {
+    if (!nuevaCategoria.trim()) return;
+    const creada = await crearCategoria(nuevaCategoria);
+    if (creada) {
+      setCategoriaId(creada.id);
+      setNuevaCategoria("");
+      setCreandoCategoria(false);
+    }
+  };
 
   const hayCuentas = cuentas.length > 0;
   const hayTarjetas = tarjetas.length > 0;
@@ -60,7 +80,7 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
       if (ok) await onSaved();
       return;
     }
-    const ok = await commitMovimiento({ accion, targetId, monto, nota });
+    const ok = await commitMovimiento({ accion, targetId, monto, nota, categoriaId: categoriaId || null });
     if (ok) await onSaved();
   };
 
@@ -116,6 +136,56 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, commitMovimient
           </select>
           <ChevronDown size={16} className="select-chevron" />
         </div>
+
+        {requiereCategoria && (
+          <>
+            <div className="field-label" style={{ margin: "0 0 8px" }}>Categoría (opcional)</div>
+            {!creandoCategoria ? (
+              <div className="select-wrapper">
+                <select
+                  className="target-select"
+                  data-testid="nuevo-mov-categoria-select"
+                  value={categoriaId}
+                  onChange={(e) => {
+                    if (e.target.value === "__nueva__") {
+                      setCreandoCategoria(true);
+                      return;
+                    }
+                    setCategoriaId(e.target.value);
+                  }}
+                >
+                  <option value="">Sin categoría</option>
+                  {categorias.map((c) => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                  <option value="__nueva__">+ Nueva categoría...</option>
+                </select>
+                <ChevronDown size={16} className="select-chevron" />
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                <input
+                  className="note-input"
+                  style={{ marginBottom: 0, flex: 1 }}
+                  placeholder="Nombre de la categoría"
+                  data-testid="nuevo-mov-categoria-nueva-input"
+                  value={nuevaCategoria}
+                  onChange={(e) => setNuevaCategoria(e.target.value)}
+                />
+                <button className="btn dark" data-testid="nuevo-mov-categoria-crear-button" onClick={handleCrearCategoria}>
+                  Agregar
+                </button>
+                <button
+                  className="btn"
+                  data-testid="nuevo-mov-categoria-cancelar-button"
+                  onClick={() => { setCreandoCategoria(false); setNuevaCategoria(""); }}
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}
+          </>
+        )}
 
         {esPagoTarjeta && (
           <>

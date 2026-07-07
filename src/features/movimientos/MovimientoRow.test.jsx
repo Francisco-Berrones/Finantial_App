@@ -44,4 +44,18 @@ describe("MovimientoRow", () => {
     render(<MovimientoRow movimiento={movimiento} />);
     expect(screen.queryByText(/Desde/)).not.toBeInTheDocument();
   });
+
+  it("shows the categoria name when the movimiento has one", () => {
+    const movimiento = {
+      id: 4,
+      tipo_accion: "gasto_credito",
+      target_nombre: "Oro",
+      categoria: { nombre: "Comida" },
+      fecha: new Date().toISOString(),
+      monto: 200,
+      nota: "",
+    };
+    render(<MovimientoRow movimiento={movimiento} />);
+    expect(screen.getByText(/Comida/)).toBeInTheDocument();
+  });
 });

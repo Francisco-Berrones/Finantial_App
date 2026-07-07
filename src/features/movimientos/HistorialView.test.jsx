@@ -13,22 +13,25 @@ describe("HistorialView", () => {
 
   it("shows all movimientos by default", () => {
     render(<HistorialView movimientos={movimientos} cuentas={cuentas} tarjetas={tarjetas} onDelete={vi.fn()} />);
-    expect(screen.getByText(/Ingreso/)).toBeInTheDocument();
-    expect(screen.getByText(/Gasto con crédito/)).toBeInTheDocument();
+    const lista = within(screen.getByTestId("historial-mov-list"));
+    expect(lista.getByText(/Ingreso/)).toBeInTheDocument();
+    expect(lista.getByText(/Gasto con crédito/)).toBeInTheDocument();
   });
 
   it("filters by tipo de movimiento", () => {
     render(<HistorialView movimientos={movimientos} cuentas={cuentas} tarjetas={tarjetas} onDelete={vi.fn()} />);
     fireEvent.change(screen.getByTestId("historial-filtro-tipo"), { target: { value: "ingreso_cuenta" } });
-    expect(screen.getByText(/Ingreso/)).toBeInTheDocument();
-    expect(screen.queryByText(/Gasto con crédito/)).not.toBeInTheDocument();
+    const lista = within(screen.getByTestId("historial-mov-list"));
+    expect(lista.getByText(/Ingreso/)).toBeInTheDocument();
+    expect(lista.queryByText(/Gasto con crédito/)).not.toBeInTheDocument();
   });
 
   it("filters by cuenta/tarjeta target", () => {
     render(<HistorialView movimientos={movimientos} cuentas={cuentas} tarjetas={tarjetas} onDelete={vi.fn()} />);
     fireEvent.change(screen.getByTestId("historial-filtro-target"), { target: { value: "tarjeta-1" } });
-    expect(screen.getByText(/Gasto con crédito/)).toBeInTheDocument();
-    expect(screen.queryByText(/Ingreso/)).not.toBeInTheDocument();
+    const lista = within(screen.getByTestId("historial-mov-list"));
+    expect(lista.getByText(/Gasto con crédito/)).toBeInTheDocument();
+    expect(lista.queryByText(/Ingreso/)).not.toBeInTheDocument();
   });
 
   it("shows a no-match message when filters exclude everything", () => {
@@ -70,9 +73,10 @@ describe("HistorialView", () => {
     ];
     render(<HistorialView movimientos={movimientosConOrigen} cuentas={cuentas} tarjetas={tarjetas} onDelete={vi.fn()} />);
     fireEvent.change(screen.getByTestId("historial-filtro-target"), { target: { value: "cuenta-1" } });
-    expect(screen.getByText(/Ingreso/)).toBeInTheDocument();
-    expect(screen.getByText(/Pago a tarjeta/)).toBeInTheDocument();
-    expect(screen.queryByText(/Gasto con crédito/)).not.toBeInTheDocument();
+    const lista = within(screen.getByTestId("historial-mov-list"));
+    expect(lista.getByText(/Ingreso/)).toBeInTheDocument();
+    expect(lista.getByText(/Pago a tarjeta/)).toBeInTheDocument();
+    expect(lista.queryByText(/Gasto con crédito/)).not.toBeInTheDocument();
   });
 
   it("groups movimientos under a month/year header", () => {

@@ -120,7 +120,7 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
             <div className="section-title" data-testid={`historial-mes-${grupo.clave}`} style={{ margin: "8px 16px" }}>
               {grupo.clave}
             </div>
-            <div className="mov-list">
+            <div className="mov-list" data-testid="historial-mov-list">
               {grupo.items.map((m) => (
                 <MovimientoRow key={m.id} movimiento={m} onDelete={onDelete} />
               ))}

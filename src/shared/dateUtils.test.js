@@ -26,7 +26,7 @@ describe("diasHasta", () => {
   it("rolls over to next month when the día already passed", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 5, 25));
-    expect(diasHasta(5)).toBe(11);
+    expect(diasHasta(5)).toBe(10);
   });
 });
 

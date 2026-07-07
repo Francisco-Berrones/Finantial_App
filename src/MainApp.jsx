@@ -1,34 +1,60 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Home, Clock, Landmark, LogOut, Bot } from "lucide-react";
+import { Plus, Home, Clock, Landmark, LogOut, Bot, Settings } from "lucide-react";
 import { supabase } from "./shared/lib/supabaseClient";
 import { useCuentas } from "./features/cuentas/useCuentas";
 import { useTarjetas } from "./features/tarjetas/useTarjetas";
 import { useMovimientos } from "./features/movimientos/useMovimientos";
+import { useCategorias } from "./features/categorias/useCategorias";
+import { useSuscripciones } from "./features/suscripciones/useSuscripciones";
 import InicioView from "./pages/InicioView";
 import HistorialView from "./features/movimientos/HistorialView";
 import CuentasManager from "./features/cuentas/CuentasManager";
 import TarjetasManager from "./features/tarjetas/TarjetasManager";
+import SuscripcionesManager from "./features/suscripciones/SuscripcionesManager";
+import SuscripcionesPendientesModal from "./features/suscripciones/SuscripcionesPendientesModal";
 import NuevoMovimientoView from "./features/movimientos/NuevoMovimientoView";
 import TarjetaDetalleView from "./features/tarjetas/TarjetaDetalleView";
 import AsesorChatView from "./features/asesor/AsesorChatView";
+import ResumenCategoriasView from "./features/resumen/ResumenCategoriasView";
 
 export default function MainApp({ session }) {
   const { cuentas, fetchCuentas, addCuenta, deleteCuenta } = useCuentas();
   const { tarjetas, fetchTarjetas, addTarjeta, deleteTarjeta, updateCortePago } = useTarjetas();
   const { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento, commitPagoTarjeta } = useMovimientos();
+  const { categorias, fetchCategorias, addCategoria } = useCategorias();
+  const { suscripciones, fetchSuscripciones, addSuscripcion, deleteSuscripcion, confirmarCobro } = useSuscripciones();
 
   const [view, setView] = useState("inicio");
   const [cargando, setCargando] = useState(true);
   const [detalleTarjetaId, setDetalleTarjetaId] = useState(null);
   const [viewAntesDetalle, setViewAntesDetalle] = useState("inicio");
+  const [mostrarPendientes, setMostrarPendientes] = useState(false);
+
+  const pendientesSuscripciones = suscripciones.filter((s) => s.pendiente_confirmar);
 
   const fetchAll = useCallback(async () => {
-    await Promise.all([fetchCuentas(), fetchTarjetas(), fetchMovimientos()]);
+    await Promise.all([fetchCuentas(), fetchTarjetas(), fetchMovimientos(), fetchCategorias(), fetchSuscripciones()]);
     setCargando(false);
-  }, [fetchCuentas, fetchTarjetas, fetchMovimientos]);
+  }, [fetchCuentas, fetchTarjetas, fetchMovimientos, fetchCategorias, fetchSuscripciones]);
+
+  const crearCategoria = async (nombre) => {
+    const creada = await addCategoria({ nombre, userId: session.user.id });
+    if (creada) await fetchCategorias();
+    return creada;
+  };
+
+  const confirmarCobroSuscripcion = async (id) => {
+    const ok = await confirmarCobro(id);
+    if (ok) await fetchAll();
+  };
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  useEffect(() => {
+    if (!cargando && pendientesSuscripciones.length > 0) setMostrarPendientes(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargando]);
 
   const abrirDetalleTarjeta = (id) => {
     setViewAntesDetalle(view);
@@ -177,6 +203,8 @@ export default function MainApp({ session }) {
         <NuevoMovimientoView
           cuentas={cuentas}
           tarjetas={tarjetas}
+          categorias={categorias}
+          crearCategoria={crearCategoria}
           commitMovimiento={commitMovimiento}
           commitPagoTarjeta={commitPagoTarjeta}
           onBack={() => setView("inicio")}
@@ -190,10 +218,16 @@ export default function MainApp({ session }) {
         <motion.div key="asesor" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <AsesorChatView onBack={() => setView("inicio")} />
         </motion.div>
+      ) : view === "resumen" ? (
+        <motion.div key="resumen" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
+        <ResumenCategoriasView movimientos={movimientos} onBack={() => setView("inicio")} />
+        </motion.div>
       ) : view === "tarjetaDetalle" ? (
         <motion.div key="tarjetaDetalle" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <TarjetaDetalleView
           tarjeta={tarjetas.find((t) => t.id === detalleTarjetaId)}
+          categorias={categorias}
+          crearCategoria={crearCategoria}
           onBack={() => setView(viewAntesDetalle)}
           onGuardarCortePago={async (id, datos) => {
             const ok = await updateCortePago(id, datos);
@@ -218,23 +252,8 @@ export default function MainApp({ session }) {
                   <LogOut size={18} />
                 </button>
               )}
-              <button
-                className="logout-btn"
-                style={{ marginTop: 32, ...(view === "asesor" ? { color: "var(--ink)" } : {}) }}
-                data-testid="header-asesor-button"
-                onClick={() => setView("asesor")}
-                title="Asesor"
-              >
-                <Bot size={26} />
-              </button>
-              <button
-                className="logout-btn"
-                style={{ marginTop: 32, ...(view === "cuentas" ? { color: "var(--ink)" } : {}) }}
-                data-testid="header-cuentas-button"
-                onClick={() => setView("cuentas")}
-                title="Cuentas y tarjetas"
-              >
-                <Landmark size={28} />
+              <button className="logout-btn" style={{ marginTop: 32 }} data-testid="header-ajustes-button" title="Ajustes">
+                <Settings size={24} />
               </button>
             </div>
           </div>
@@ -251,6 +270,7 @@ export default function MainApp({ session }) {
                     movimientos={movimientos}
                     onNavigateCuentas={() => setView("cuentas")}
                     onVerTarjeta={abrirDetalleTarjeta}
+                    onAbrirResumen={() => setView("resumen")}
                   />
                 </motion.div>
               )}
@@ -287,6 +307,16 @@ export default function MainApp({ session }) {
                       onChange={fetchAll}
                       onVerTarjeta={abrirDetalleTarjeta}
                     />
+                    <SuscripcionesManager
+                      suscripciones={suscripciones}
+                      cuentas={cuentas}
+                      tarjetas={tarjetas}
+                      categorias={categorias}
+                      session={session}
+                      addSuscripcion={addSuscripcion}
+                      deleteSuscripcion={deleteSuscripcion}
+                      onChange={fetchAll}
+                    />
                   </div>
                 </motion.div>
               )}
@@ -297,16 +327,30 @@ export default function MainApp({ session }) {
             <button className={`tab-btn ${view === "inicio" ? "active" : ""}`} data-testid="tabbar-inicio-button" onClick={() => setView("inicio")}>
               <Home size={19} /> Inicio
             </button>
+            <button className={`tab-btn ${view === "historial" ? "active" : ""}`} data-testid="tabbar-historial-button" onClick={() => setView("historial")}>
+              <Clock size={19} /> Historial
+            </button>
             <button className="fab" data-testid="tabbar-fab-button" onClick={() => setView("nuevoMovimiento")} aria-label="Registrar movimiento">
               <Plus size={24} />
             </button>
-            <button className={`tab-btn ${view === "historial" ? "active" : ""}`} data-testid="tabbar-historial-button" onClick={() => setView("historial")}>
-              <Clock size={19} /> Historial
+            <button className={`tab-btn ${view === "cuentas" ? "active" : ""}`} data-testid="tabbar-cuentas-button" onClick={() => setView("cuentas")}>
+              <Landmark size={19} /> Cuentas
+            </button>
+            <button className={`tab-btn ${view === "asesor" ? "active" : ""}`} data-testid="tabbar-asesor-button" onClick={() => setView("asesor")}>
+              <Bot size={19} /> Asesor
             </button>
           </div>
         </motion.div>
       )}
       </AnimatePresence>
+
+      {mostrarPendientes && pendientesSuscripciones.length > 0 && (
+        <SuscripcionesPendientesModal
+          pendientes={pendientesSuscripciones}
+          onConfirmar={confirmarCobroSuscripcion}
+          onClose={() => setMostrarPendientes(false)}
+        />
+      )}
     </div>
   );
 }

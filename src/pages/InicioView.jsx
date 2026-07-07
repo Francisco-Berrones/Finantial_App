@@ -1,9 +1,10 @@
+import { BarChart2, ChevronRight } from "lucide-react";
 import { fmt } from "../shared/format";
 import CuentaRow from "../features/cuentas/CuentaRow";
 import TarjetaRow from "../features/tarjetas/TarjetaRow";
 import MovimientoRow from "../features/movimientos/MovimientoRow";
 
-export default function InicioView({ cuentas, tarjetas, movimientos, onNavigateCuentas, onVerTarjeta }) {
+export default function InicioView({ cuentas, tarjetas, movimientos, onNavigateCuentas, onVerTarjeta, onAbrirResumen }) {
   const totalAhorro = cuentas.reduce((s, c) => s + Number(c.saldo), 0);
   const totalDisponible = tarjetas.reduce((s, t) => s + (Number(t.linea_total) - Number(t.saldo_usado)), 0);
   const hayCuentas = cuentas.length > 0;
@@ -20,6 +21,16 @@ export default function InicioView({ cuentas, tarjetas, movimientos, onNavigateC
           <div className="summary-label">Crédito disponible</div>
           <div className="summary-value mono">{fmt(totalDisponible)}</div>
         </div>
+      </div>
+
+      <div style={{ padding: "4px 16px 0" }}>
+        <button className="action-btn" data-testid="inicio-resumen-button" onClick={onAbrirResumen} style={{ marginBottom: 0, justifyContent: "space-between" }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span className="ico"><BarChart2 size={17} /></span>
+            Gasto por categoría
+          </span>
+          <ChevronRight size={16} />
+        </button>
       </div>
 
       {!hayCuentas && !hayTarjetas && (

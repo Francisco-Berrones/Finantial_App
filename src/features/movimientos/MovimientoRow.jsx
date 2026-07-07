@@ -17,6 +17,7 @@ export default function MovimientoRow({ movimiento, onDelete }) {
           {movimiento.tipo_accion === "pago_tarjeta" && (
             <> · Desde {movimiento.origen_cuenta_nombre || "efectivo/externo"}</>
           )}
+          {movimiento.categoria?.nombre && <> · {movimiento.categoria.nombre}</>}
         </div>
       </div>
       <div className={`mov-amount mono ${meta.tono}`}>{fmt(movimiento.monto)}</div>
