@@ -216,7 +216,7 @@ export default function MainApp({ session }) {
         </motion.div>
       ) : view === "asesor" ? (
         <motion.div key="asesor" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
-        <AsesorChatView onBack={() => setView("inicio")} />
+        <AsesorChatView session={session} onBack={() => setView("inicio")} />
         </motion.div>
       ) : view === "resumen" ? (
         <motion.div key="resumen" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>

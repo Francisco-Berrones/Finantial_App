@@ -16,17 +16,61 @@ function jsonResponse(body: unknown, status = 200) {
   });
 }
 
+// Si el mes no tiene ese día (ej. día 30 en febrero), usa el último día del mes en vez
+// de desbordar al mes siguiente (comportamiento por defecto de `new Date(y, m, d)`).
+function diaClamp(anio: number, mes: number, dia: number): Date {
+  const ultimoDiaDelMes = new Date(anio, mes + 1, 0).getDate();
+  const d = new Date(anio, mes, Math.min(dia, ultimoDiaDelMes));
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
 // Mirrors src/shared/dateUtils.js diasHasta() - dia_corte/dia_pago are day-of-month integers.
-function diasHasta(diaObjetivo: number | null): number | null {
+function fechaObjetivo(diaObjetivo: number | null): Date | null {
   if (!diaObjetivo) return null;
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
-  let candidato = new Date(hoy.getFullYear(), hoy.getMonth(), diaObjetivo);
-  candidato.setHours(0, 0, 0, 0);
+  let candidato = diaClamp(hoy.getFullYear(), hoy.getMonth(), diaObjetivo);
   if (candidato < hoy) {
-    candidato = new Date(hoy.getFullYear(), hoy.getMonth() + 1, diaObjetivo);
+    candidato = diaClamp(hoy.getFullYear(), hoy.getMonth() + 1, diaObjetivo);
   }
-  return Math.round((candidato.getTime() - hoy.getTime()) / 86400000);
+  return candidato;
+}
+
+// La fecha de corte MÁS RECIENTE (hoy o en el pasado) -- es el corte que generó
+// la deuda que hay que pagar ahora, a diferencia de fechaObjetivo() que da el
+// PRÓXIMO corte futuro (el que todavía se está acumulando).
+function fechaUltimoCorte(diaCorte: number | null): Date | null {
+  if (!diaCorte) return null;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  let candidato = diaClamp(hoy.getFullYear(), hoy.getMonth(), diaCorte);
+  if (candidato > hoy) {
+    candidato = diaClamp(hoy.getFullYear(), hoy.getMonth() - 1, diaCorte);
+  }
+  return candidato;
+}
+
+// La fecha de pago que corresponde a un corte específico -- siempre es la primera
+// ocurrencia del día de pago DESPUÉS de ese corte (puede caer en el mismo mes o en
+// el siguiente, dependiendo de si el día de pago es mayor o menor que el día de corte).
+function fechaPagoDeCorte(fechaCorte: Date, diaPago: number | null): Date | null {
+  if (!diaPago) return null;
+  let candidato = diaClamp(fechaCorte.getFullYear(), fechaCorte.getMonth(), diaPago);
+  if (candidato <= fechaCorte) {
+    candidato = diaClamp(fechaCorte.getFullYear(), fechaCorte.getMonth() + 1, diaPago);
+  }
+  return candidato;
+}
+
+function diasEntreHoyY(fecha: Date): number {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return Math.round((fecha.getTime() - hoy.getTime()) / 86400000);
+}
+
+function fmtFechaLarga(d: Date): string {
+  return d.toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" });
 }
 
 function claveMes(fechaIso: string): string {
@@ -37,6 +81,40 @@ function claveMes(fechaIso: string): string {
 function nombreMes(clave: string): string {
   const [anio, mes] = clave.split("-").map(Number);
   return new Date(anio, mes - 1, 1).toLocaleDateString("es-MX", { month: "long", year: "numeric" });
+}
+
+// PostgREST returns `categoria` as a single embedded object here (movimientos.categoria_id
+// is a to-one FK into categorias) — cast via `unknown` since this untyped client can't infer it.
+interface MovimientoRow {
+  monto: number;
+  fecha: string;
+  tipo_accion: string;
+  target_tipo: string;
+  target_id: string;
+  nota: string | null;
+  categoria: { nombre: string } | null;
+}
+
+interface SuscripcionRow {
+  nombre: string;
+  monto: number;
+  frecuencia: string;
+  costo_mensual_equivalente: number;
+  target_nombre: string;
+  pendiente_confirmar: boolean;
+}
+
+interface MsiRow {
+  tarjeta_id: string;
+  descripcion: string;
+  mensualidad: number;
+  meses_restantes: number;
+  saldo_pendiente: number;
+}
+
+function esTurnoHistorial(m: unknown): m is { rol: string; contenido: string } {
+  const t = m as { rol?: unknown; contenido?: unknown };
+  return (t?.rol === "usuario" || t?.rol === "asesor") && typeof t?.contenido === "string";
 }
 
 Deno.serve(async (req) => {
@@ -50,9 +128,13 @@ Deno.serve(async (req) => {
   }
 
   let pregunta = "";
+  let historial: Array<{ rol: string; contenido: string }> = [];
   try {
     const body = await req.json();
     pregunta = typeof body?.pregunta === "string" ? body.pregunta.trim() : "";
+    if (Array.isArray(body?.historial)) {
+      historial = body.historial.filter(esTurnoHistorial).slice(-10);
+    }
   } catch {
     return jsonResponse({ error: "Cuerpo de la solicitud inválido" }, 400);
   }
@@ -73,19 +155,23 @@ Deno.serve(async (req) => {
     { data: tarjetas, error: errTarjetas },
     { data: movimientos, error: errMovimientos },
     { data: suscripciones, error: errSuscripciones },
+    { data: comprasMsi, error: errMsi },
   ] = await Promise.all([
     supabase.from("cuentas").select("nombre, saldo"),
-    supabase.from("tarjetas").select("nombre, banco, linea_total, saldo_usado, dia_corte, dia_pago"),
+    supabase.from("tarjetas").select("id, nombre, banco, linea_total, saldo_usado, dia_corte, dia_pago"),
+    // Sin filtrar tipo_accion: se necesitan también pago_tarjeta e ingreso_cuenta para el resumen mensual.
     supabase
       .from("movimientos")
-      .select("monto, fecha, tipo_accion, categoria:categorias(nombre)")
-      .in("tipo_accion", ["gasto_credito", "gasto_debito"])
+      .select("monto, fecha, tipo_accion, target_tipo, target_id, nota, categoria:categorias(nombre)")
       .gte("fecha", hace6Meses.toISOString()),
-    supabase.from("suscripciones_estado").select("nombre, monto, frecuencia, costo_mensual_equivalente, target_nombre"),
+    supabase
+      .from("suscripciones_estado")
+      .select("nombre, monto, frecuencia, costo_mensual_equivalente, target_nombre, pendiente_confirmar"),
+    supabase.from("msi_detalle").select("tarjeta_id, descripcion, mensualidad, meses_restantes, saldo_pendiente"),
   ]);
 
-  if (errCuentas || errTarjetas || errMovimientos || errSuscripciones) {
-    console.error("Error leyendo datos:", errCuentas || errTarjetas || errMovimientos || errSuscripciones);
+  if (errCuentas || errTarjetas || errMovimientos || errSuscripciones || errMsi) {
+    console.error("Error leyendo datos:", errCuentas || errTarjetas || errMovimientos || errSuscripciones || errMsi);
     return jsonResponse({ error: "No se pudieron leer tus datos" }, 500);
   }
 
@@ -93,15 +179,75 @@ Deno.serve(async (req) => {
     (cuentas || []).map((c) => `- ${c.nombre}: saldo $${Number(c.saldo).toFixed(2)}`).join("\n") ||
     "Sin cuentas de ahorro registradas.";
 
+  const movimientosList = (movimientos as unknown as MovimientoRow[]) || [];
+  const comprasMsiList = (comprasMsi as unknown as MsiRow[]) || [];
+
+  // Mensualidad total de compras a meses activas, por tarjeta -- esto es lo que
+  // realmente toca pagar de esas compras este corte, no su saldo pendiente completo.
+  const mensualidadMsiPorTarjeta: Record<string, number> = {};
+  comprasMsiList
+    .filter((c) => c.meses_restantes > 0 && Number(c.saldo_pendiente) > 0)
+    .forEach((c) => {
+      mensualidadMsiPorTarjeta[c.tarjeta_id] = (mensualidadMsiPorTarjeta[c.tarjeta_id] || 0) + Number(c.mensualidad);
+    });
+
+  // Suma el gasto_credito "normal" (excluyendo el cargo original de compras a meses,
+  // que siempre trae "meses sin intereses" en la nota) de una tarjeta, en una ventana de fechas.
+  function gastoNormalEnVentana(tarjetaId: string, desde: Date, hasta: Date): number {
+    return movimientosList
+      .filter(
+        (m) =>
+          m.tipo_accion === "gasto_credito" &&
+          m.target_tipo === "tarjeta" &&
+          m.target_id === tarjetaId &&
+          !/meses sin intereses/i.test(m.nota || "") &&
+          new Date(m.fecha) > desde &&
+          new Date(m.fecha) <= hasta
+      )
+      .reduce((s, m) => s + Number(m.monto), 0);
+  }
+
   const resumenTarjetas =
     (tarjetas || [])
       .map((t) => {
-        const disponible = Number(t.linea_total) - Number(t.saldo_usado);
-        const diasCorte = diasHasta(t.dia_corte);
-        const diasPago = diasHasta(t.dia_pago);
-        return `- ${t.nombre} (${t.banco}): disponible $${disponible.toFixed(2)}, ${
-          diasCorte !== null ? `corte en ${diasCorte} días` : "sin día de corte configurado"
-        }, ${diasPago !== null ? `pago en ${diasPago} días` : "sin día de pago configurado"}`;
+        const lineaTotal = Number(t.linea_total);
+        const saldoUsado = Number(t.saldo_usado);
+        const disponible = lineaTotal - saldoUsado;
+
+        // El corte más reciente ya cerró el ciclo que generó la deuda que hay que pagar ahora.
+        // El próximo corte todavía está acumulando gasto del ciclo actual (abierto).
+        const ultimoCorte = fechaUltimoCorte(t.dia_corte);
+        const proximoCorte = fechaObjetivo(t.dia_corte);
+        // El pago que toca hacer ahora es el que corresponde al corte YA CERRADO, no al próximo.
+        const proximoPago = ultimoCorte ? fechaPagoDeCorte(ultimoCorte, t.dia_pago) : null;
+
+        const diasProximoCorte = proximoCorte ? diasEntreHoyY(proximoCorte) : null;
+        const diasProximoPago = proximoPago ? diasEntreHoyY(proximoPago) : null;
+
+        const mensualidadesMsi = mensualidadMsiPorTarjeta[t.id] || 0;
+
+        let textoAPagar = "no se puede calcular (falta configurar el día de corte)";
+        if (ultimoCorte) {
+          const inicioCicloCerrado = new Date(ultimoCorte);
+          inicioCicloCerrado.setMonth(inicioCicloCerrado.getMonth() - 1);
+          const gastoCicloCerrado = gastoNormalEnVentana(t.id, inicioCicloCerrado, ultimoCorte);
+          const totalAPagar = gastoCicloCerrado + mensualidadesMsi;
+          textoAPagar =
+            `$${totalAPagar.toFixed(2)} (gasto normal del ciclo que cerró en tu corte del ${fmtFechaLarga(ultimoCorte)}: ` +
+            `$${gastoCicloCerrado.toFixed(2)} + mensualidades de compras a meses: $${mensualidadesMsi.toFixed(2)})`;
+        }
+
+        let textoAcumuladoCicloActual = "no se puede calcular (falta configurar el día de corte)";
+        if (ultimoCorte && proximoCorte) {
+          const gastoCicloActual = gastoNormalEnVentana(t.id, ultimoCorte, proximoCorte);
+          textoAcumuladoCicloActual = `$${(gastoCicloActual + mensualidadesMsi).toFixed(2)} (sube hasta el próximo corte, todavía no se paga)`;
+        }
+
+        return `- ${t.nombre} (${t.banco}): línea total $${lineaTotal.toFixed(2)}, usado -- ocupa el límite e incluye el ` +
+          `MONTO TOTAL de compras a meses activas, no es lo que se paga -- $${saldoUsado.toFixed(2)}, ` +
+          `disponible $${disponible.toFixed(2)}. ` +
+          `${proximoPago ? `Próximo pago: ${fmtFechaLarga(proximoPago)} (en ${diasProximoPago} días), monto a pagar: ${textoAPagar}. ` : "Sin día de pago configurado. "}` +
+          `${proximoCorte ? `Próximo corte (cierra el ciclo actual, todavía se sigue acumulando): ${fmtFechaLarga(proximoCorte)} (en ${diasProximoCorte} días), acumulado hasta hoy para ese corte: ${textoAcumuladoCicloActual}.` : "Sin día de corte configurado."}`;
       })
       .join("\n") || "Sin tarjetas de crédito registradas.";
 
@@ -113,14 +259,23 @@ Deno.serve(async (req) => {
 
   const porCategoriaYMes: Record<string, Record<string, number>> = {};
   const totalPorMes: Record<string, number> = {};
+  const pagosTarjetaPorMes: Record<string, number> = {};
+  const ingresosPorMes: Record<string, number> = {};
 
-  (movimientos || []).forEach((m: any) => {
-    const cat = m.categoria?.nombre || "Sin categoría";
+  movimientosList.forEach((m) => {
     const mes = claveMes(m.fecha);
     const monto = Number(m.monto);
-    porCategoriaYMes[cat] = porCategoriaYMes[cat] || {};
-    porCategoriaYMes[cat][mes] = (porCategoriaYMes[cat][mes] || 0) + monto;
-    totalPorMes[mes] = (totalPorMes[mes] || 0) + monto;
+
+    if (m.tipo_accion === "gasto_credito" || m.tipo_accion === "gasto_debito") {
+      const cat = m.categoria?.nombre || "Sin categoría";
+      porCategoriaYMes[cat] = porCategoriaYMes[cat] || {};
+      porCategoriaYMes[cat][mes] = (porCategoriaYMes[cat][mes] || 0) + monto;
+      totalPorMes[mes] = (totalPorMes[mes] || 0) + monto;
+    } else if (m.tipo_accion === "pago_tarjeta") {
+      pagosTarjetaPorMes[mes] = (pagosTarjetaPorMes[mes] || 0) + monto;
+    } else if (m.tipo_accion === "ingreso_cuenta") {
+      ingresosPorMes[mes] = (ingresosPorMes[mes] || 0) + monto;
+    }
   });
 
   const resumenCategoriaHistorico =
@@ -136,26 +291,62 @@ Deno.serve(async (req) => {
 
   const totalMesActual = totalPorMes[claveMesActual] || 0;
   const totalMesAnterior = totalPorMes[claveMesAnterior] || 0;
+  const pagosTarjetaMesActual = pagosTarjetaPorMes[claveMesActual] || 0;
+  const pagosTarjetaMesAnterior = pagosTarjetaPorMes[claveMesAnterior] || 0;
+  const ingresosMesActual = ingresosPorMes[claveMesActual] || 0;
+  const ingresosMesAnterior = ingresosPorMes[claveMesAnterior] || 0;
 
   const resumenSuscripciones =
-    (suscripciones || [])
+    ((suscripciones as unknown as SuscripcionRow[]) || [])
       .map(
-        (s: any) =>
+        (s) =>
           `- ${s.nombre}: $${Number(s.monto).toFixed(2)} (${s.frecuencia}, equivalente mensual $${Number(
             s.costo_mensual_equivalente
-          ).toFixed(2)}) cargado a ${s.target_nombre}`
+          ).toFixed(2)}) cargado a ${s.target_nombre}${s.pendiente_confirmar ? " -- PENDIENTE DE CONFIRMAR ESTE CICLO" : ""}`
       )
       .join("\n") || "Sin suscripciones activas.";
 
+  const tarjetaNombrePorId: Record<string, string> = {};
+  (tarjetas || []).forEach((t) => { tarjetaNombrePorId[t.id] = t.nombre; });
+
+  const resumenMsi =
+    comprasMsiList
+      .filter((c) => c.meses_restantes > 0 && Number(c.saldo_pendiente) > 0)
+      .map(
+        (c) =>
+          `- ${c.descripcion || "Compra a meses"} (${tarjetaNombrePorId[c.tarjeta_id] || "tarjeta"}): mensualidad $${Number(
+            c.mensualidad
+          ).toFixed(2)}, saldo pendiente $${Number(c.saldo_pendiente).toFixed(2)}, ${c.meses_restantes} meses restantes`
+      )
+      .join("\n") || "Sin compras a meses sin intereses activas.";
+
   const systemPrompt =
     "Eres un asesor financiero dentro de una app personal de finanzas. Solo puedes usar los datos que se te dan " +
-    "explícitamente abajo (cuentas, tarjetas, gasto por categoría de los últimos 6 meses, y suscripciones) -- " +
-    "nunca inventes montos, tasas, fechas o disponibles que no aparezcan en esos datos, y nunca asumas datos de " +
-    "meses fuera del rango que se te dio. Puedes comparar meses, identificar en qué categoría gastó más el usuario, " +
-    "señalar tendencias, y ayudarlo a tomar mejores decisiones financieras con base en esos datos. Si falta " +
-    "información para responder con certeza, dilo claramente en vez de suponer. Responde siempre en español, de " +
-    "forma directa y sin rodeos -- usa 3 a 5 líneas para preguntas simples, y hasta 8-10 líneas (con desglose breve) " +
-    "cuando la pregunta pida comparar categorías o meses.";
+    "explícitamente abajo (cuentas, tarjetas, gasto por categoría de los últimos 6 meses, pagos a tarjeta e " +
+    "ingresos por mes, compras a meses sin intereses activas, y suscripciones) -- nunca inventes montos, tasas, " +
+    "fechas o disponibles que no aparezcan en esos datos, y nunca asumas datos de meses fuera del rango que se te " +
+    "dio. Puedes comparar meses, identificar en qué categoría gastó más el usuario, señalar tendencias, avisar de " +
+    "suscripciones pendientes de confirmar, considerar las mensualidades de compras a meses como compromiso fijo " +
+    "junto con las suscripciones, y ayudarlo a tomar mejores decisiones financieras con base en esos datos. " +
+    "IMPORTANTE sobre tarjetas: el 'usado' de una tarjeta ocupa su límite e incluye el monto TOTAL de las compras " +
+    "a meses activas, aunque el usuario no deba pagar eso completo -- nunca uses 'usado' como el monto a pagar. " +
+    "Cada tarjeta te da dos cosas separadas y no las confundas: (1) 'Próximo pago' con su 'monto a pagar' -- esto " +
+    "es lo que hay que pagar YA, corresponde al corte que ya cerró; úsalo si preguntan cuánto pagar, o cuánto le " +
+    "quedaría en una cuenta de ahorro tras pagar (resta esa cifra del saldo de la cuenta elegida). (2) 'Próximo " +
+    "corte' con su 'acumulado hasta hoy' -- esto es el ciclo que TODAVÍA está abierto y sigue acumulando gasto, " +
+    "es solo informativo, no es lo que se paga ahora. Si el usuario pregunta 'cuánto debo pagar' sin más contexto, " +
+    "usa la cifra de 'Próximo pago', no la del 'Próximo corte'. Si un campo dice que no se pudo calcular, dilo " +
+    "así en vez de usar 'usado' como sustituto. " +
+    "IMPORTANTE sobre fechas: las fechas de corte y pago, y el número de días que faltan para cada una, ya vienen " +
+    "calculadas y son exactas, y ya están correctamente relacionadas entre sí (el pago mostrado es el que " +
+    "corresponde a ese corte, aunque su fecha de pago caiga antes en el calendario que la fecha de corte -- eso " +
+    "es normal y no es un error en los datos) -- nunca las recalcules, las sumes, ni infieras una fecha distinta " +
+    "por tu cuenta, ni marques como inconsistencia que un pago caiga antes que un corte. Cópialas literalmente " +
+    "tal como se te dan. Si necesitas mencionar cuántos días de margen hay entre el corte y el pago, usa " +
+    "exactamente los días que se te dieron para cada uno (no vuelvas a contarlos a partir de la fecha)." +
+    "Si falta información para responder con certeza, dilo claramente en vez de suponer. Responde siempre en " +
+    "español, de forma directa y sin rodeos -- usa 3 a 5 líneas para preguntas simples, y hasta 8-10 líneas (con " +
+    "desglose breve) cuando la pregunta pida comparar categorías o meses.";
 
   const hoyTexto = new Date().toLocaleDateString("es-MX", {
     weekday: "long",
@@ -168,11 +359,26 @@ Deno.serve(async (req) => {
     `Fecha de hoy: ${hoyTexto}\n\n` +
     `Cuentas de ahorro:\n${resumenCuentas}\n\n` +
     `Tarjetas de crédito:\n${resumenTarjetas}\n\n` +
+    `Compras a meses sin intereses activas:\n${resumenMsi}\n\n` +
     `Suscripciones activas:\n${resumenSuscripciones}\n\n` +
     `Gasto total este mes (${nombreMes(claveMesActual)}): $${totalMesActual.toFixed(2)}\n` +
     `Gasto total mes anterior (${nombreMes(claveMesAnterior)}): $${totalMesAnterior.toFixed(2)}\n\n` +
+    `Pagos a tarjeta este mes: $${pagosTarjetaMesActual.toFixed(2)}\n` +
+    `Pagos a tarjeta mes anterior: $${pagosTarjetaMesAnterior.toFixed(2)}\n\n` +
+    `Ingresos a cuentas este mes: $${ingresosMesActual.toFixed(2)}\n` +
+    `Ingresos a cuentas mes anterior: $${ingresosMesAnterior.toFixed(2)}\n\n` +
     `Gasto por categoría, últimos 6 meses (formato: categoría -> mes: monto, mes: monto...):\n${resumenCategoriaHistorico}\n\n` +
     `Pregunta del usuario: ${pregunta}`;
+
+  // Turnos previos de esta conversación, para que el modelo tenga memoria de lo ya hablado.
+  // Los datos financieros siempre van frescos en el último turno (arriba), nunca se asume que
+  // los números mencionados en turnos anteriores siguen vigentes.
+  const turnosPrevios = historial.map((m) => ({
+    role: m.rol === "usuario" ? "user" : "assistant",
+    content: m.contenido,
+  }));
+
+  const messages = [...turnosPrevios, { role: "user", content: userMessage }];
 
   let anthropicRes: Response;
   try {
@@ -187,7 +393,7 @@ Deno.serve(async (req) => {
         model: "claude-haiku-4-5-20251001",
         max_tokens: 600,
         system: systemPrompt,
-        messages: [{ role: "user", content: userMessage }],
+        messages,
       }),
     });
   } catch (e) {
