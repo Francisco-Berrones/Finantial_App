@@ -51,7 +51,7 @@ export default function Login() {
           box-sizing: border-box;
           width: 100%;
           font-family: Figtree;
-          font-size: 15px;
+          font-size: 16px;
           border: 1px solid #CBC3AC;
           border-radius: 999px;
           padding: 12px 16px 12px 42px;

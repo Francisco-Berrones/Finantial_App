@@ -53,6 +53,28 @@ describe("HistorialView", () => {
     expect(screen.getByTestId("historial-filtro-target").value).toBe("todos");
   });
 
+  it("includes pago_tarjeta movimientos funded from a cuenta when filtering by that cuenta", () => {
+    const movimientosConOrigen = [
+      ...movimientos,
+      {
+        id: 12,
+        tipo_accion: "pago_tarjeta",
+        target_id: "tarjeta-1",
+        target_nombre: "Oro",
+        origen_cuenta_id: "cuenta-1",
+        origen_cuenta_nombre: "Cuenta Nómina",
+        fecha: new Date().toISOString(),
+        monto: 500,
+        nota: "",
+      },
+    ];
+    render(<HistorialView movimientos={movimientosConOrigen} cuentas={cuentas} tarjetas={tarjetas} onDelete={vi.fn()} />);
+    fireEvent.change(screen.getByTestId("historial-filtro-target"), { target: { value: "cuenta-1" } });
+    expect(screen.getByText(/Ingreso/)).toBeInTheDocument();
+    expect(screen.getByText(/Pago a tarjeta/)).toBeInTheDocument();
+    expect(screen.queryByText(/Gasto con crédito/)).not.toBeInTheDocument();
+  });
+
   it("groups movimientos under a month/year header", () => {
     const movimientosDeDosMeses = [
       { id: 20, tipo_accion: "ingreso_cuenta", target_id: "cuenta-1", target_nombre: "Cuenta Nómina", fecha: "2026-07-05T00:00:00Z", monto: 100, nota: "" },

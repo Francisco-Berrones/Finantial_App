@@ -12,7 +12,12 @@ export default function MovimientoRow({ movimiento, onDelete }) {
       </div>
       <div className="mov-body">
         <div className="mov-title">{meta.label} · {movimiento.target_nombre}</div>
-        <div className="mov-sub">{fmtFecha(movimiento.fecha)}{movimiento.nota ? ` · ${movimiento.nota}` : ""}</div>
+        <div className="mov-sub">
+          {fmtFecha(movimiento.fecha)}{movimiento.nota ? ` · ${movimiento.nota}` : ""}
+          {movimiento.tipo_accion === "pago_tarjeta" && (
+            <> · Desde {movimiento.origen_cuenta_nombre || "efectivo/externo"}</>
+          )}
+        </div>
       </div>
       <div className={`mov-amount mono ${meta.tono}`}>{fmt(movimiento.monto)}</div>
       {onDelete && (

@@ -15,7 +15,7 @@ import TarjetaDetalleView from "./features/tarjetas/TarjetaDetalleView";
 export default function MainApp({ session }) {
   const { cuentas, fetchCuentas, addCuenta, deleteCuenta } = useCuentas();
   const { tarjetas, fetchTarjetas, addTarjeta, deleteTarjeta, updateCortePago } = useTarjetas();
-  const { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento, commitPagoConAsignacion } = useMovimientos();
+  const { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento, commitPagoTarjeta } = useMovimientos();
 
   const [view, setView] = useState("inicio");
   const [cargando, setCargando] = useState(true);
@@ -59,6 +59,7 @@ export default function MainApp({ session }) {
           color: var(--ink); background: var(--paper);
           min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative;
           padding-bottom: 84px; box-sizing: border-box;
+          overflow-x: hidden;
         }
         .app-root * { box-sizing: border-box; }
         .mono { font-family: Figtree; font-variant-numeric: tabular-nums; }
@@ -91,7 +92,7 @@ export default function MainApp({ session }) {
         .msi-row-bottom { display: flex; justify-content: space-between; align-items: baseline; margin-top: 6px; font-size: 13px; color: var(--ink-soft); }
         .msi-asignacion-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--paper-line); font-size: 14px; }
         .msi-asignacion-row:last-of-type { border-bottom: none; }
-        .msi-asignacion-input { width: 100px; font-family: Figtree; font-size: 14px; border: 1px solid var(--paper-line); border-radius: 8px; padding: 8px 10px; background: var(--paper); color: var(--ink); text-align: right; }
+        .msi-asignacion-input { width: 110px; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 8px; padding: 8px 10px; background: var(--paper); color: var(--ink); text-align: right; }
         .tarjeta-row-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; }
         .tarjeta-row-left { display: flex; align-items: center; gap: 12px; }
         .tarjeta-row-icon { width: 52px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #E8CE85, #B8934A); position: relative; flex-shrink: 0; }
@@ -118,7 +119,7 @@ export default function MainApp({ session }) {
         .btn:active { transform: scale(0.97); }
         .btn.dark { background: var(--ink); color: var(--paper-card); }
         .historial-filters { display: flex; flex-direction: column; gap: 8px; padding: 0 16px 16px; }
-        .historial-filters .target-select { padding: 10px 32px 10px 12px; font-size: 13px; }
+        .historial-filters .target-select { padding: 10px 32px 10px 12px; font-size: 16px; }
         .mov-list { padding: 0 16px; }
         .mov-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--paper-line); }
         .mov-icon { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: var(--ahorro-soft); color: var(--ahorro); }
@@ -134,21 +135,14 @@ export default function MainApp({ session }) {
         .tab-btn { background: none; border: none; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: Figtree; font-size: 10px; cursor: pointer; padding: 4px 8px; }
         .tab-btn.active { color: var(--ink); }
         .fab { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: var(--paper-card); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; margin-top: -26px; box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
-        .sheet-backdrop { position: fixed; inset: 0; background: rgba(30,28,22,0.45); display: flex; align-items: flex-end; justify-content: center; z-index: 40; }
-        .sheet { background: var(--paper-card); width: 100%; max-width: 480px; border-radius: 16px 16px 0 0; padding: 18px 18px calc(18px + env(safe-area-inset-bottom)); max-height: 82vh; overflow-y: auto; }
-        .sheet-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-        .sheet-title { font-size: 17px; }
-        .sheet-close { background: none; border: none; color: var(--ink-soft); cursor: pointer; }
         .action-btn { width: 100%; text-align: left; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 6px; border: 1px solid var(--paper-line); background: var(--paper); margin-bottom: 8px; cursor: pointer; font-family: Figtree; font-size: 15px; color: var(--ink); }
         .action-btn .ico { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--credito-soft); color: var(--credito); flex-shrink: 0; }
         .action-btn .ico.ahorro { background: var(--ahorro-soft); color: var(--ahorro); }
-        .target-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 14px; border-radius: 6px; border: 1px solid var(--paper-line); background: var(--paper); margin-bottom: 8px; cursor: pointer; font-family: Figtree; font-size: 15px; color: var(--ink); }
-        .amount-input { width: 100%; font-family: Figtree; font-size: 34px; border: none; border-bottom: 2px solid var(--ink); background: transparent; color: var(--ink); padding: 8px 0; margin: 10px 0 18px; outline: none; }
-        .note-input { width: 100%; font-family: Figtree; font-size: 15px; border: 1px solid var(--paper-line); border-radius: 6px; padding: 10px 12px; background: var(--paper); color: var(--ink); margin-bottom: 16px; }
+        .note-input { width: 100%; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 6px; padding: 10px 12px; background: var(--paper); color: var(--ink); margin-bottom: 16px; }
         .field-label { font-family: Figtree; font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
         .manage-block { padding: 4px 16px 20px; }
         .form-box { background: var(--paper-card); border: 1px solid var(--paper-line); border-radius: 6px; padding: 14px; margin: 10px 0 18px; }
-        .form-box input { width: 100%; font-family: Figtree; font-size: 14px; border: 1px solid var(--paper-line); border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; background: var(--paper); color: var(--ink); }
+        .form-box input { width: 100%; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 4px; padding: 8px 10px; margin-bottom: 8px; background: var(--paper); color: var(--ink); }
         .add-link { font-family: Figtree; font-size: 12px; color: var(--ink-soft); background: none; border: none; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 6px 16px 0; }
         .nuevo-mov-header { padding: 22px 20px 14px; border-bottom: 1px solid var(--paper-line); display: flex; align-items: center; gap: 12px; }
         .nuevo-mov-back { background: none; border: none; color: var(--ink); cursor: pointer; display: flex; padding: 0; }
@@ -169,7 +163,7 @@ export default function MainApp({ session }) {
         .tipo-card--ingreso { background: var(--ahorro-soft); }
         .tipo-card--ingreso .tipo-card-icon { background: var(--ahorro); }
         .select-wrapper { position: relative; margin-bottom: 16px; }
-        .target-select { width: 100%; appearance: none; font-family: Figtree; font-size: 15px; border: 1px solid var(--paper-line); border-radius: 10px; padding: 14px 36px 14px 14px; background: var(--paper-card); color: var(--ink); }
+        .target-select { width: 100%; appearance: none; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 10px; padding: 14px 36px 14px 14px; background: var(--paper-card); color: var(--ink); }
         .select-chevron { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
         .amount-input-flat { width: 100%; font-family: Figtree; font-size: 30px; font-weight: 700; border: none; border-radius: 10px; background: var(--paper-card); color: var(--ink); padding: 18px 14px; margin-bottom: 16px; outline: none; }
         .registrar-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: Figtree; font-weight: 700; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; padding: 15px 0; border-radius: 30px; border: none; background: var(--ahorro); color: #fff; cursor: pointer; }
@@ -183,7 +177,7 @@ export default function MainApp({ session }) {
           cuentas={cuentas}
           tarjetas={tarjetas}
           commitMovimiento={commitMovimiento}
-          commitPagoConAsignacion={commitPagoConAsignacion}
+          commitPagoTarjeta={commitPagoTarjeta}
           onBack={() => setView("inicio")}
           onSaved={async () => {
             await fetchAll();
