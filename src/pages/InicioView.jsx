@@ -3,7 +3,7 @@ import CuentaRow from "../features/cuentas/CuentaRow";
 import TarjetaRow from "../features/tarjetas/TarjetaRow";
 import MovimientoRow from "../features/movimientos/MovimientoRow";
 
-export default function InicioView({ cuentas, tarjetas, movimientos, onNavigateCuentas }) {
+export default function InicioView({ cuentas, tarjetas, movimientos, onNavigateCuentas, onVerTarjeta }) {
   const totalAhorro = cuentas.reduce((s, c) => s + Number(c.saldo), 0);
   const totalDisponible = tarjetas.reduce((s, t) => s + (Number(t.linea_total) - Number(t.saldo_usado)), 0);
   const hayCuentas = cuentas.length > 0;
@@ -48,7 +48,7 @@ export default function InicioView({ cuentas, tarjetas, movimientos, onNavigateC
           <div className="section-title">Tarjetas de crédito</div>
           <div className="tarjeta-list">
             {tarjetas.map((t) => (
-              <TarjetaRow key={t.id} tarjeta={t} />
+              <TarjetaRow key={t.id} tarjeta={t} onClick={() => onVerTarjeta(t.id)} />
             ))}
           </div>
         </>
@@ -61,7 +61,7 @@ export default function InicioView({ cuentas, tarjetas, movimientos, onNavigateC
         </div>
       ) : (
         <div className="mov-list">
-          {movimientos.slice(0, 6).map((m) => (
+          {movimientos.slice(0, 10).map((m) => (
             <MovimientoRow key={m.id} movimiento={m} />
           ))}
         </div>

@@ -1,9 +1,16 @@
+import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { fmt } from "../../shared/format";
 
 export default function CuentaRow({ cuenta, onDelete }) {
   return (
-    <div className="cuenta-row-card" data-testid={`cuenta-row-${cuenta.id}`}>
+    <motion.div
+      className="cuenta-row-card"
+      data-testid={`cuenta-row-${cuenta.id}`}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+    >
       <div className="cuenta-row-top">
         <div>
           <div className="cuenta-row-name">{cuenta.nombre}</div>
@@ -19,6 +26,6 @@ export default function CuentaRow({ cuenta, onDelete }) {
           </button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

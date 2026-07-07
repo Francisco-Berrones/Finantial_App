@@ -2,6 +2,21 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import MovimientoRow from "./MovimientoRow";
 import { ACCIONES } from "../../shared/constants";
+import { fmtMesAno } from "../../shared/format";
+
+function agruparPorMes(movimientos) {
+  const grupos = [];
+  let actual = null;
+  movimientos.forEach((m) => {
+    const clave = fmtMesAno(m.fecha);
+    if (!actual || actual.clave !== clave) {
+      actual = { clave, items: [] };
+      grupos.push(actual);
+    }
+    actual.items.push(m);
+  });
+  return grupos;
+}
 
 function fechaCumpleFiltro(fechaIso, filtro) {
   if (filtro === "todos") return true;
@@ -20,17 +35,25 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
   const [targetFiltro, setTargetFiltro] = useState("todos");
   const [fechaFiltro, setFechaFiltro] = useState("todos");
 
+  const targetTipo = tipoFiltro === "todos" ? null : ACCIONES[tipoFiltro].targetTipo;
   const targetOptions = [
-    ...cuentas.map((c) => ({ value: c.nombre, label: c.nombre })),
-    ...tarjetas.map((t) => ({ value: t.nombre, label: t.banco ? `${t.nombre} · ${t.banco}` : t.nombre })),
+    ...(targetTipo === "tarjeta" ? [] : cuentas.map((c) => ({ value: c.id, label: c.nombre }))),
+    ...(targetTipo === "cuenta" ? [] : tarjetas.map((t) => ({ value: t.id, label: t.banco ? `${t.nombre} · ${t.banco}` : t.nombre }))),
   ];
+
+  const handleTipoChange = (nuevoTipo) => {
+    setTipoFiltro(nuevoTipo);
+    setTargetFiltro("todos");
+  };
 
   const movimientosFiltrados = movimientos.filter((m) => {
     if (tipoFiltro !== "todos" && m.tipo_accion !== tipoFiltro) return false;
-    if (targetFiltro !== "todos" && m.target_nombre !== targetFiltro) return false;
+    if (targetFiltro !== "todos" && m.target_id !== targetFiltro) return false;
     if (!fechaCumpleFiltro(m.fecha, fechaFiltro)) return false;
     return true;
   });
+
+  const gruposPorMes = agruparPorMes(movimientosFiltrados);
 
   return (
     <div style={{ paddingTop: 16 }}>
@@ -40,7 +63,7 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
             className="target-select"
             data-testid="historial-filtro-tipo"
             value={tipoFiltro}
-            onChange={(e) => setTipoFiltro(e.target.value)}
+            onChange={(e) => handleTipoChange(e.target.value)}
           >
             <option value="todos">Todos los movimientos</option>
             {Object.entries(ACCIONES).map(([tipo, meta]) => (
@@ -57,7 +80,9 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
             value={targetFiltro}
             onChange={(e) => setTargetFiltro(e.target.value)}
           >
-            <option value="todos">Todas las cuentas y tarjetas</option>
+            <option value="todos">
+              {targetTipo === "tarjeta" ? "Todas las tarjetas" : targetTipo === "cuenta" ? "Todas las cuentas" : "Todas las cuentas y tarjetas"}
+            </option>
             {targetOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -81,21 +106,28 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
         </div>
       </div>
 
-      <div className="mov-list">
-        {movimientos.length === 0 ? (
-          <div style={{ color: "var(--ink-soft)", fontSize: 14, padding: "20px 0" }}>
-            No hay movimientos todavía.
+      {movimientos.length === 0 ? (
+        <div style={{ color: "var(--ink-soft)", fontSize: 14, padding: "20px 16px" }}>
+          No hay movimientos todavía.
+        </div>
+      ) : movimientosFiltrados.length === 0 ? (
+        <div style={{ color: "var(--ink-soft)", fontSize: 14, padding: "20px 16px" }}>
+          No hay movimientos que coincidan con estos filtros.
+        </div>
+      ) : (
+        gruposPorMes.map((grupo) => (
+          <div key={grupo.clave}>
+            <div className="section-title" data-testid={`historial-mes-${grupo.clave}`} style={{ margin: "8px 16px" }}>
+              {grupo.clave}
+            </div>
+            <div className="mov-list">
+              {grupo.items.map((m) => (
+                <MovimientoRow key={m.id} movimiento={m} onDelete={onDelete} />
+              ))}
+            </div>
           </div>
-        ) : movimientosFiltrados.length === 0 ? (
-          <div style={{ color: "var(--ink-soft)", fontSize: 14, padding: "20px 0" }}>
-            No hay movimientos que coincidan con estos filtros.
-          </div>
-        ) : (
-          movimientosFiltrados.map((m) => (
-            <MovimientoRow key={m.id} movimiento={m} onDelete={onDelete} />
-          ))
-        )}
-      </div>
+        ))
+      )}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import { Trash2 } from "lucide-react";
 import { fmt } from "../../shared/format";
 
@@ -12,10 +13,18 @@ function iconClassFor(banco) {
   return BANCO_ICON_CLASS[key] || "";
 }
 
-export default function TarjetaRow({ tarjeta, onDelete }) {
+export default function TarjetaRow({ tarjeta, onDelete, onClick }) {
   const disponible = tarjeta.linea_total - tarjeta.saldo_usado;
   return (
-    <div className="tarjeta-row-card" data-testid={`tarjeta-row-${tarjeta.id}`}>
+    <motion.div
+      className={`tarjeta-row-card${onClick ? " tarjeta-row-card--clickable" : ""}`}
+      data-testid={`tarjeta-row-${tarjeta.id}`}
+      onClick={onClick}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      whileTap={onClick ? { scale: 0.98 } : undefined}
+    >
       <div className="tarjeta-row-top">
         <div className="tarjeta-row-left">
           <div className={`tarjeta-row-icon ${iconClassFor(tarjeta.banco)}`}>
@@ -33,7 +42,10 @@ export default function TarjetaRow({ tarjeta, onDelete }) {
           <button
             className="row-delete-btn"
             data-testid={`tarjeta-row-delete-button-${tarjeta.id}`}
-            onClick={() => onDelete(tarjeta.id)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(tarjeta.id);
+            }}
           >
             <Trash2 size={14} />
           </button>
@@ -55,6 +67,6 @@ export default function TarjetaRow({ tarjeta, onDelete }) {
           <div className="tarjeta-row-stat-value mono">{fmt(disponible)}</div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
