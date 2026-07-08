@@ -210,14 +210,17 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = []
         {esPagoTarjeta && comprasMsi.length > 0 && (
           <div className="field-label" style={{ margin: "0 0 8px" }}>Pago al saldo general (opcional)</div>
         )}
-        <input
-          className="amount-input-flat"
-          inputMode="decimal"
-          placeholder="$0.00"
-          data-testid="nuevo-mov-monto-input"
-          value={monto}
-          onChange={(e) => setMonto(e.target.value.replace(/[^0-9.]/g, ""))}
-        />
+        <div className="amount-input-wrapper">
+          <span className={`amount-input-prefix ${!monto ? "amount-input-prefix--vacio" : ""}`}>$</span>
+          <input
+            className="amount-input-flat"
+            inputMode="decimal"
+            placeholder="0.00"
+            data-testid="nuevo-mov-monto-input"
+            value={monto}
+            onChange={(e) => setMonto(e.target.value.replace(/[^0-9.]/g, ""))}
+          />
+        </div>
 
         <input
           className="note-input"
