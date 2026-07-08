@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, List, Send } from "lucide-react";
 import { supabase } from "../../shared/lib/supabaseClient";
 import { useConversaciones } from "./useConversaciones";
@@ -16,6 +16,14 @@ export default function AsesorChatView({ session, onBack }) {
   const [enviando, setEnviando] = useState(false);
   const [mostrarConversaciones, setMostrarConversaciones] = useState(false);
   const [cargando, setCargando] = useState(true);
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [pregunta]);
 
   useEffect(() => {
     (async () => {
@@ -112,8 +120,8 @@ export default function AsesorChatView({ session, onBack }) {
         .asesor-msg { max-width: 82%; padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; }
         .asesor-msg.usuario { align-self: flex-end; background: var(--ink); color: var(--paper-card); border-bottom-right-radius: 4px; }
         .asesor-msg.asesor { align-self: flex-start; background: var(--paper-card); border: 1px solid var(--paper-line); border-bottom-left-radius: 4px; }
-        .asesor-footer { flex-shrink: 0; display: flex; align-items: center; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--paper-line); }
-        .asesor-input { flex: 1; min-width: 0; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 20px; padding: 10px 16px; background: var(--paper-card); color: var(--ink); }
+        .asesor-footer { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--paper-line); }
+        .asesor-input { flex: 1; min-width: 0; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 20px; padding: 10px 16px; background: var(--paper-card); color: var(--ink); resize: none; max-height: 120px; overflow-y: auto; line-height: 1.4; }
         .asesor-send { width: 40px; height: 40px; border-radius: 50%; background: var(--ink); color: var(--paper-card); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; flex-shrink: 0; }
         .asesor-send:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>
@@ -146,13 +154,20 @@ export default function AsesorChatView({ session, onBack }) {
       </div>
 
       <div className="asesor-footer">
-        <input
+        <textarea
+          ref={textareaRef}
           className="asesor-input"
           data-testid="asesor-input"
           placeholder="Escribe tu pregunta..."
+          rows={1}
           value={pregunta}
           onChange={(e) => setPregunta(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && enviar()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              enviar();
+            }
+          }}
         />
         <button
           className="asesor-send"

@@ -17,6 +17,7 @@ import NuevoMovimientoView from "./features/movimientos/NuevoMovimientoView";
 import TarjetaDetalleView from "./features/tarjetas/TarjetaDetalleView";
 import AsesorChatView from "./features/asesor/AsesorChatView";
 import ResumenCategoriasView from "./features/resumen/ResumenCategoriasView";
+import AjustesView from "./pages/AjustesView";
 
 export default function MainApp({ session }) {
   const { cuentas, fetchCuentas, addCuenta, deleteCuenta } = useCuentas();
@@ -85,7 +86,7 @@ export default function MainApp({ session }) {
           font-family: Figtree;
           color: var(--ink); background: var(--paper);
           min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative;
-          padding-bottom: 84px; box-sizing: border-box;
+          box-sizing: border-box;
           overflow-x: hidden;
         }
         .app-root * { box-sizing: border-box; }
@@ -192,7 +193,11 @@ export default function MainApp({ session }) {
         .select-wrapper { position: relative; margin-bottom: 16px; }
         .target-select { width: 100%; appearance: none; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 10px; padding: 14px 36px 14px 14px; background: var(--paper-card); color: var(--ink); }
         .select-chevron { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); pointer-events: none; }
-        .amount-input-flat { width: 100%; font-family: Figtree; font-size: 30px; font-weight: 700; border: none; border-radius: 10px; background: var(--paper-card); color: var(--ink); padding: 18px 14px; margin-bottom: 16px; outline: none; }
+        .amount-input-wrapper { position: relative; margin-bottom: 16px; }
+        .amount-input-prefix { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-family: Figtree; font-size: 30px; font-weight: 700; color: var(--ink); pointer-events: none; }
+        .amount-input-prefix--vacio { color: var(--ink-soft); opacity: 0.6; }
+        .amount-input-flat { width: 100%; font-family: Figtree; font-size: 30px; font-weight: 700; border: none; border-radius: 10px; background: var(--paper-card); color: var(--ink); padding: 18px 14px 18px 30px; outline: none; margin-bottom: 0; }
+        .amount-input-flat::placeholder { color: var(--ink-soft); opacity: 0.6; }
         .registrar-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: Figtree; font-weight: 700; font-size: 15px; text-transform: uppercase; letter-spacing: 0.04em; padding: 15px 0; border-radius: 30px; border: none; background: var(--ahorro); color: #fff; cursor: pointer; }
         .registrar-btn:active { transform: scale(0.98); }
       `}</style>
@@ -222,6 +227,10 @@ export default function MainApp({ session }) {
         <motion.div key="resumen" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <ResumenCategoriasView movimientos={movimientos} onBack={() => setView("inicio")} />
         </motion.div>
+      ) : view == "ajustes" ? (
+        <motion.div key="ajustes" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
+        <AjustesView session={session} onBack={() => setView("inicio")} />
+        </motion.div>
       ) : view === "tarjetaDetalle" ? (
         <motion.div key="tarjetaDetalle" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <TarjetaDetalleView
@@ -238,7 +247,7 @@ export default function MainApp({ session }) {
         />
         </motion.div>
       ) : (
-        <motion.div key="main" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
+        <motion.div key="main" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }} style={{ paddingBottom: 84 }}>
           <div className="header">
             <div>
               <p className="header-eyebrow" style={{ marginTop: 20 }}>
@@ -247,12 +256,7 @@ export default function MainApp({ session }) {
               <h1 className="header-title"><b>FinTrack</b></h1>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
-              {view === "cuentas" && (
-                <button className="logout-btn" data-testid="mainapp-logout-button" onClick={() => supabase.auth.signOut()} title="Cerrar sesión">
-                  <LogOut size={18} />
-                </button>
-              )}
-              <button className="logout-btn" style={{ marginTop: 32 }} data-testid="header-ajustes-button" title="Ajustes">
+              <button className="logout-btn" style={{ marginTop: 32 }} data-testid="header-ajustes-button" title="Ajustes" onClick={() => setView("ajustes")}>
                 <Settings size={24} />
               </button>
             </div>

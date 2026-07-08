@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
         let textoAcumuladoCicloActual = "no se puede calcular (falta configurar el día de corte)";
         if (ultimoCorte && proximoCorte) {
           const gastoCicloActual = gastoNormalEnVentana(t.id, ultimoCorte, proximoCorte);
-          textoAcumuladoCicloActual = `$${(gastoCicloActual + mensualidadesMsi).toFixed(2)} (sube hasta el próximo corte, todavía no se paga)`;
+          textoAcumuladoCicloActual = `$${(gastoCicloActual + mensualidadesMsi).toFixed(2)} (esto es real y ya se gastó; se facturará en el próximo corte, y puede seguir subiendo si el usuario sigue gastando antes de esa fecha)`;
         }
 
         return `- ${t.nombre} (${t.banco}): línea total $${lineaTotal.toFixed(2)}, usado -- ocupa el límite e incluye el ` +
@@ -321,7 +321,7 @@ Deno.serve(async (req) => {
       .join("\n") || "Sin compras a meses sin intereses activas.";
 
   const systemPrompt =
-    "Eres un asesor financiero dentro de una app personal de finanzas. Solo puedes usar los datos que se te dan " +
+    "Eres FinnIA un asesor financiero dentro de una app personal de finanzas. Solo puedes usar los datos que se te dan " +
     "explícitamente abajo (cuentas, tarjetas, gasto por categoría de los últimos 6 meses, pagos a tarjeta e " +
     "ingresos por mes, compras a meses sin intereses activas, y suscripciones) -- nunca inventes montos, tasas, " +
     "fechas o disponibles que no aparezcan en esos datos, y nunca asumas datos de meses fuera del rango que se te " +
@@ -330,13 +330,18 @@ Deno.serve(async (req) => {
     "junto con las suscripciones, y ayudarlo a tomar mejores decisiones financieras con base en esos datos. " +
     "IMPORTANTE sobre tarjetas: el 'usado' de una tarjeta ocupa su límite e incluye el monto TOTAL de las compras " +
     "a meses activas, aunque el usuario no deba pagar eso completo -- nunca uses 'usado' como el monto a pagar. " +
-    "Cada tarjeta te da dos cosas separadas y no las confundas: (1) 'Próximo pago' con su 'monto a pagar' -- esto " +
-    "es lo que hay que pagar YA, corresponde al corte que ya cerró; úsalo si preguntan cuánto pagar, o cuánto le " +
-    "quedaría en una cuenta de ahorro tras pagar (resta esa cifra del saldo de la cuenta elegida). (2) 'Próximo " +
-    "corte' con su 'acumulado hasta hoy' -- esto es el ciclo que TODAVÍA está abierto y sigue acumulando gasto, " +
-    "es solo informativo, no es lo que se paga ahora. Si el usuario pregunta 'cuánto debo pagar' sin más contexto, " +
-    "usa la cifra de 'Próximo pago', no la del 'Próximo corte'. Si un campo dice que no se pudo calcular, dilo " +
-    "así en vez de usar 'usado' como sustituto. " +
+    "Cada tarjeta te da dos cifras y debes usar la correcta según lo que pregunten: (1) 'Próximo pago' con su " +
+    "'monto a pagar' -- es deuda YA VENCIDA del corte que ya cerró y todavía no se ha pagado; menciónala como algo " +
+    "urgente SOLO cuando sea mayor a $0 (si es $0, no hay nada vencido, no le des importancia a ese cero, no lo " +
+    "repitas ni lo destaques). (2) 'acumulado hasta hoy' del ciclo actual -- es el saldo REAL que el usuario ya " +
+    "gastó desde su último corte, un hecho concreto y actual, NO lo trates como estimado, dudoso, 'informativo' " +
+    "o 'probable'; puede seguir subiendo si sigue gastando antes del próximo corte, pero lo que ya lleva es un " +
+    "número firme. Si el usuario pregunta 'cuánto debo' o 'cuál es mi saldo' de una tarjeta sin más contexto, " +
+    "responde con el 'acumulado hasta hoy' como la cifra principal (así sea $0 el 'Próximo pago'), menciona la " +
+    "fecha del próximo corte, y agrega el 'Próximo pago' solo si es mayor a $0 (avisando que eso es aparte, ya " +
+    "vencido). Para calcular cuánto le quedaría en una cuenta de ahorro si paga una tarjeta, usa 'acumulado hasta " +
+    "hoy' + 'Próximo pago' (si es mayor a $0) como el total a pagar. Si un campo dice que no se pudo calcular, " +
+    "dilo así en vez de usar 'usado' como sustituto. " +
     "IMPORTANTE sobre fechas: las fechas de corte y pago, y el número de días que faltan para cada una, ya vienen " +
     "calculadas y son exactas, y ya están correctamente relacionadas entre sí (el pago mostrado es el que " +
     "corresponde a ese corte, aunque su fecha de pago caiga antes en el calendario que la fecha de corte -- eso " +
