@@ -121,7 +121,8 @@ export default function AsesorChatView({ session, onBack }) {
         .asesor-msg.usuario { align-self: flex-end; background: var(--ink); color: var(--paper-card); border-bottom-right-radius: 4px; }
         .asesor-msg.asesor { align-self: flex-start; background: var(--paper-card); border: 1px solid var(--paper-line); border-bottom-left-radius: 4px; }
         .asesor-footer { flex-shrink: 0; display: flex; align-items: flex-end; gap: 8px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--paper-line); }
-        .asesor-input { flex: 1; min-width: 0; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 20px; padding: 10px 16px; background: var(--paper-card); color: var(--ink); resize: none; max-height: 120px; overflow-y: auto; line-height: 1.4; }
+        .asesor-input { flex: 1; min-width: 0; font-family: Figtree; font-size: 16px; border: 1px solid var(--paper-line); border-radius: 20px; padding: 10px 16px; background: var(--paper-card); color: var(--ink); resize: none; max-height: 120px; overflow-y: auto; line-height: 1.4; scrollbar-width: none; -ms-overflow-style: none; }
+        .asesor-input::-webkit-scrollbar { display: none; }
         .asesor-send { width: 40px; height: 40px; border-radius: 50%; background: var(--ink); color: var(--paper-card); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; flex-shrink: 0; }
         .asesor-send:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>

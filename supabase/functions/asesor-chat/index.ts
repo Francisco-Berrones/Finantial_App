@@ -175,6 +175,13 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "No se pudieron leer tus datos" }, 500);
   }
 
+  const hoyTexto = new Date().toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   const resumenCuentas =
     (cuentas || []).map((c) => `- ${c.nombre}: saldo $${Number(c.saldo).toFixed(2)}`).join("\n") ||
     "Sin cuentas de ahorro registradas.";
@@ -243,11 +250,14 @@ Deno.serve(async (req) => {
           textoAcumuladoCicloActual = `$${(gastoCicloActual + mensualidadesMsi).toFixed(2)} (esto es real y ya se gastó; se facturará en el próximo corte, y puede seguir subiendo si el usuario sigue gastando antes de esa fecha)`;
         }
 
-        return `- ${t.nombre} (${t.banco}): línea total $${lineaTotal.toFixed(2)}, usado -- ocupa el límite e incluye el ` +
-          `MONTO TOTAL de compras a meses activas, no es lo que se paga -- $${saldoUsado.toFixed(2)}, ` +
-          `disponible $${disponible.toFixed(2)}. ` +
-          `${proximoPago ? `Próximo pago: ${fmtFechaLarga(proximoPago)} (en ${diasProximoPago} días), monto a pagar: ${textoAPagar}. ` : "Sin día de pago configurado. "}` +
-          `${proximoCorte ? `Próximo corte (cierra el ciclo actual, todavía se sigue acumulando): ${fmtFechaLarga(proximoCorte)} (en ${diasProximoCorte} días), acumulado hasta hoy para ese corte: ${textoAcumuladoCicloActual}.` : "Sin día de corte configurado."}`;
+        return (
+          `- ${t.nombre} (${t.banco}):\n` +
+          `    Día de corte configurado: ${t.dia_corte ?? "sin configurar"} de cada mes. Día de pago configurado: ${t.dia_pago ?? "sin configurar"} de cada mes.\n` +
+          `    Orden del ciclo: primero corta (cierra lo gastado), después se paga -- el pago siempre es posterior al corte al que pertenece, aunque su día de mes sea numéricamente menor (ej. corte día 25, pago día 15 del MES SIGUIENTE).\n` +
+          `    línea total $${lineaTotal.toFixed(2)}, usado (ocupa el límite, incluye el MONTO TOTAL de compras a meses activas, NO es lo que se paga) $${saldoUsado.toFixed(2)}, disponible $${disponible.toFixed(2)}.\n` +
+          `    PRÓXIMA FECHA DE PAGO (la real, ya calculada, correcta, para HOY que es ${hoyTexto}): ${proximoPago ? `${fmtFechaLarga(proximoPago)} (en ${diasProximoPago} días)` : "sin día de pago configurado"}. Monto a pagar en ese pago: ${proximoPago ? textoAPagar : "N/A"}.\n` +
+          `    PRÓXIMO CORTE (la fecha real, ya calculada, correcta, para HOY que es ${hoyTexto}): ${proximoCorte ? `${fmtFechaLarga(proximoCorte)} (en ${diasProximoCorte} días)` : "sin día de corte configurado"}. Acumulado hasta hoy en ese ciclo (aún no se paga, es informativo): ${proximoCorte ? textoAcumuladoCicloActual : "N/A"}.`
+        );
       })
       .join("\n") || "Sin tarjetas de crédito registradas.";
 
@@ -321,7 +331,14 @@ Deno.serve(async (req) => {
       .join("\n") || "Sin compras a meses sin intereses activas.";
 
   const systemPrompt =
-    "Eres FinnIA un asesor financiero dentro de una app personal de finanzas. Solo puedes usar los datos que se te dan " +
+    "Eres FinnIA un asesor financiero dentro de una app personal de finanzas. " +
+    "IMPORTANTE sobre saludos: si la pregunta del usuario es un saludo genérico (ej. 'hola', 'buenas', 'qué tal', " +
+    "o un mensaje sin una pregunta financiera específica), responde MUY breve -- un saludo corto, y una pregunta " +
+    "de vuelta invitándolo a decir en qué quiere profundizar, mencionando 2-3 ejemplos de temas (ej. deuda total, " +
+    "estado de una tarjeta, gasto por categoría). NO reveles cifras, saldos, fechas de corte/pago, ni ningún " +
+    "análisis en ese primer saludo, aunque los tengas disponibles -- eso solo se comparte cuando lo pidan " +
+    "explícitamente en su pregunta. " +
+    "Solo puedes usar los datos que se te dan " +
     "explícitamente abajo (cuentas, tarjetas, gasto por categoría de los últimos 6 meses, pagos a tarjeta e " +
     "ingresos por mes, compras a meses sin intereses activas, y suscripciones) -- nunca inventes montos, tasas, " +
     "fechas o disponibles que no aparezcan en esos datos, y nunca asumas datos de meses fuera del rango que se te " +
@@ -348,17 +365,16 @@ Deno.serve(async (req) => {
     "es normal y no es un error en los datos) -- nunca las recalcules, las sumes, ni infieras una fecha distinta " +
     "por tu cuenta, ni marques como inconsistencia que un pago caiga antes que un corte. Cópialas literalmente " +
     "tal como se te dan. Si necesitas mencionar cuántos días de margen hay entre el corte y el pago, usa " +
-    "exactamente los días que se te dieron para cada uno (no vuelvas a contarlos a partir de la fecha)." +
+    "exactamente los días que se te dieron para cada uno (no vuelvas a contarlos a partir de la fecha). " +
+    "IMPORTANTE sobre memoria de la conversación: los mensajes anteriores de este chat pueden contener fechas o " +
+    "montos que TÚ MISMO dijiste antes, pero que ya no son válidos -- el tiempo pasa entre un mensaje y otro, y " +
+    "los datos financieros se recalculan de cero en cada pregunta. NUNCA repitas, copies o te bases en una fecha " +
+    "o monto que mencionaste en un turno anterior; siempre usa exclusivamente los datos que se te dan en ESTE " +
+    "turno (los de más abajo, junto a la pregunta actual), incluso si contradicen algo que dijiste antes -- en " +
+    "ese caso los datos nuevos siempre tienen prioridad, y los anteriores estaban desactualizados. " +
     "Si falta información para responder con certeza, dilo claramente en vez de suponer. Responde siempre en " +
     "español, de forma directa y sin rodeos -- usa 3 a 5 líneas para preguntas simples, y hasta 8-10 líneas (con " +
     "desglose breve) cuando la pregunta pida comparar categorías o meses.";
-
-  const hoyTexto = new Date().toLocaleDateString("es-MX", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
 
   const userMessage =
     `Fecha de hoy: ${hoyTexto}\n\n` +
@@ -384,6 +400,12 @@ Deno.serve(async (req) => {
   }));
 
   const messages = [...turnosPrevios, { role: "user", content: userMessage }];
+
+  // DEBUG temporal: para diagnosticar inconsistencias de fecha/monto, revisa
+  // `supabase functions logs asesor-chat` y compara contra lo que responde el modelo.
+  console.log("[asesor-chat] resumenTarjetas:", resumenTarjetas);
+  console.log("[asesor-chat] turnos previos incluidos:", turnosPrevios.length);
+  console.log("[asesor-chat] pregunta:", pregunta);
 
   let anthropicRes: Response;
   try {
