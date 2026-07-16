@@ -10,10 +10,10 @@ export function useCategorias() {
     setCategorias(data || []);
   }, []);
 
-  const addCategoria = useCallback(async ({ nombre, userId }) => {
+  const addCategoria = useCallback(async ({ nombre, userId, icono = null, color = null }) => {
     const { data, error } = await supabase
       .from("categorias")
-      .insert({ nombre: nombre.trim(), user_id: userId, es_predefinida: false })
+      .insert({ nombre: nombre.trim(), user_id: userId, es_predefinida: false, icono, color })
       .select()
       .single();
     if (error) {

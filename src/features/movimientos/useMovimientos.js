@@ -8,7 +8,7 @@ export function useMovimientos() {
   const fetchMovimientos = useCallback(async () => {
     const { data, error } = await supabase
       .from("movimientos")
-      .select("*, categoria:categorias(nombre)")
+      .select("*, categoria:categorias(nombre, icono, color)")
       .order("fecha", { ascending: false });
     if (error) console.error(error);
     setMovimientos(data || []);

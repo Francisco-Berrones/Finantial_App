@@ -13,7 +13,7 @@ export function useTarjetas() {
     setTarjetas(data || []);
   }, []);
 
-  const addTarjeta = useCallback(async ({ nombre, banco, lineaTotal, saldoUsado, diaCorte, diaPago, userId }) => {
+  const addTarjeta = useCallback(async ({ nombre, banco, lineaTotal, saldoUsado, diaCorte, diaPago, color, userId }) => {
     const { error } = await supabase.from("tarjetas").insert({
       nombre: nombre.trim(),
       banco: banco.trim(),
@@ -21,6 +21,7 @@ export function useTarjetas() {
       saldo_usado: parseFloat(saldoUsado) || 0,
       dia_corte: diaCorte ? parseInt(diaCorte, 10) : null,
       dia_pago: diaPago ? parseInt(diaPago, 10) : null,
+      color: color || null,
       user_id: userId,
     });
     if (error) {

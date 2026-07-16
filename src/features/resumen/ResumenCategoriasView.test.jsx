@@ -15,6 +15,15 @@ vi.mock("recharts", () => ({
   XAxis: () => null,
   YAxis: () => null,
   Tooltip: () => null,
+  PieChart: ({ children }) => <div data-testid="mock-piechart">{children}</div>,
+  Pie: ({ data }) => (
+    <div>
+      {data.map((d) => (
+        <div key={d.nombre} data-testid="mock-pie-item">{d.nombre}: {d.total}</div>
+      ))}
+    </div>
+  ),
+  Cell: () => null,
 }));
 
 function fechaHaceDias(dias) {
@@ -43,14 +52,31 @@ describe("ResumenCategoriasView", () => {
 
   it("excludes movimientos outside the selected range and ingresos", () => {
     render(<ResumenCategoriasView movimientos={movimientos} onBack={vi.fn()} />);
-    expect(screen.queryByText(/Sin categoría/)).not.toBeInTheDocument();
+    expect(screen.queryByText("Sin categoría")).not.toBeInTheDocument();
   });
 
   it("recomputes when the rango filter changes", () => {
     render(<ResumenCategoriasView movimientos={movimientos} onBack={vi.fn()} />);
-    fireEvent.change(screen.getByTestId("resumen-rango-select"), { target: { value: "6_meses" } });
+    fireEvent.click(screen.getByTestId("resumen-rango-6_meses"));
     const items = screen.getAllByTestId("mock-bar-item").map((n) => n.textContent);
     expect(items).toContain("Sin categoría: 999");
+  });
+
+  it("switches between barras and pastel", () => {
+    render(<ResumenCategoriasView movimientos={movimientos} onBack={vi.fn()} />);
+    expect(screen.getByTestId("mock-barchart")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("resumen-chart-tipo-pastel"));
+    expect(screen.getByTestId("mock-piechart")).toBeInTheDocument();
+    const items = screen.getAllByTestId("mock-pie-item").map((n) => n.textContent);
+    expect(items).toEqual(["Transporte: 500", "Comida: 400"]);
+  });
+
+  it("shows the category breakdown with its share of the total", () => {
+    render(<ResumenCategoriasView movimientos={movimientos} onBack={vi.fn()} />);
+    expect(screen.getByText("Transporte")).toBeInTheDocument();
+    expect(screen.getByText("56% del total")).toBeInTheDocument(); // 500 / 900
+    expect(screen.getByText("44% del total")).toBeInTheDocument(); // 400 / 900
   });
 
   it("calls onBack when the back button is clicked", () => {

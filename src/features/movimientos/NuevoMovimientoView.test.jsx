@@ -183,7 +183,8 @@ describe("NuevoMovimientoView", () => {
     );
 
     fireEvent.change(screen.getByTestId("nuevo-mov-target-select"), { target: { value: "2" } });
-    fireEvent.change(screen.getByTestId("nuevo-mov-categoria-select"), { target: { value: "cat-1" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-categoria-abrir-button"));
+    fireEvent.click(screen.getByTestId("categoria-picker-item-cat-1"));
     fireEvent.change(screen.getByTestId("nuevo-mov-monto-input"), { target: { value: "300" } });
     fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
 
@@ -209,13 +210,13 @@ describe("NuevoMovimientoView", () => {
       />
     );
     fireEvent.click(screen.getByTestId("tipo-card-pago_tarjeta"));
-    expect(screen.queryByTestId("nuevo-mov-categoria-select")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("nuevo-mov-categoria-abrir-button")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId("tipo-card-ingreso_cuenta"));
-    expect(screen.queryByTestId("nuevo-mov-categoria-select")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("nuevo-mov-categoria-abrir-button")).not.toBeInTheDocument();
   });
 
-  it("creates a new categoria inline and selects it", async () => {
+  it("creates a new categoria from the picker and selects it", async () => {
     const commitMovimiento = vi.fn().mockResolvedValue(true);
     const crearCategoria = vi.fn().mockResolvedValue({ id: "cat-nueva", nombre: "Mascotas" });
     render(
@@ -231,13 +232,16 @@ describe("NuevoMovimientoView", () => {
     );
 
     fireEvent.change(screen.getByTestId("nuevo-mov-target-select"), { target: { value: "2" } });
-    fireEvent.change(screen.getByTestId("nuevo-mov-categoria-select"), { target: { value: "__nueva__" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-categoria-abrir-button"));
+    fireEvent.click(screen.getByTestId("categoria-picker-crear-nueva"));
     fireEvent.change(screen.getByTestId("nuevo-mov-categoria-nueva-input"), { target: { value: "Mascotas" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-categoria-icono-favorite"));
+    fireEvent.click(screen.getByTestId("nuevo-mov-categoria-color-3D5A80"));
     fireEvent.click(screen.getByTestId("nuevo-mov-categoria-crear-button"));
 
-    expect(crearCategoria).toHaveBeenCalledWith("Mascotas");
+    expect(crearCategoria).toHaveBeenCalledWith("Mascotas", { icono: "favorite", color: "#3D5A80" });
 
-    await screen.findByTestId("nuevo-mov-categoria-select");
+    await screen.findByTestId("nuevo-mov-categoria-abrir-button");
     fireEvent.change(screen.getByTestId("nuevo-mov-monto-input"), { target: { value: "150" } });
     fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
 

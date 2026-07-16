@@ -13,10 +13,11 @@ export function useCuentas() {
     setCuentas(data || []);
   }, []);
 
-  const addCuenta = useCallback(async ({ nombre, saldo, userId }) => {
+  const addCuenta = useCallback(async ({ nombre, saldo, proposito, userId }) => {
     const { error } = await supabase.from("cuentas").insert({
       nombre: nombre.trim(),
       saldo: parseFloat(saldo) || 0,
+      proposito: proposito || null,
       user_id: userId,
     });
     if (error) {
