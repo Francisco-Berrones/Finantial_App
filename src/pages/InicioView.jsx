@@ -88,6 +88,15 @@ export default function InicioView({ cuentas, tarjetas, movimientos, msiActivas 
           --outline: #76777D; --outline-variant: #C6C6CD;
           --income: #1B5E20; --expense: #BA1A1A;
           font-family: Inter, sans-serif; color: var(--on-surface); padding: 16px;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .app-root[data-theme="dark"] .inicio-nuevo-root {
+          --bg: #101317; --surface: #1B1F23; --surface-hi: #262B30; --surface-low: #15181B;
+          --primary: #DAE2FD; --on-primary: #131B2E; --primary-container: #2A3550; --primary-fixed: #DAE2FD;
+          --secondary-container: #3A4A63; --on-secondary-container: #B8C6E0;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0;
+          --outline: #8D9199; --outline-variant: #43474E;
+          --income: #6DDD8C; --expense: #FFB4AB;
         }
         .inicio-saldo-label { font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin: 0 0 4px; }
         .inicio-saldo-valor { font-size: 40px; font-weight: 700; letter-spacing: -0.02em; color: var(--primary); margin: 0 0 24px; }
@@ -128,7 +137,7 @@ export default function InicioView({ cuentas, tarjetas, movimientos, msiActivas 
         .inicio-vencimiento-btn:active { background: rgba(255,255,255,0.2); }
 
         .inicio-empty { color: var(--on-surface-variant); font-size: 14px; text-align: center; padding: 20px; border: 1.5px dashed var(--outline-variant); border-radius: 12px; margin-bottom: 20px; }
-        .inicio-empty button { margin-top: 12px; background: var(--primary); color: #fff; border: none; border-radius: 10px; padding: 10px 18px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .inicio-empty button { margin-top: 12px; background: var(--primary); color: var(--on-primary); border: none; border-radius: 10px; padding: 10px 18px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
         .inicio-mov-empty { color: var(--on-surface-variant); font-size: 14px; padding: 8px 4px; }
       `}</style>
 

@@ -95,6 +95,16 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
           --outline: #76777D; --outline-variant: #C6C6CD;
           --income: #1B5E20; --expense: #BA1A1A;
           font-family: Inter, sans-serif; color: var(--on-surface); padding: 16px;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .app-root[data-theme="dark"] .historial-nuevo-root {
+          --bg: #101317; --surface: #1B1F23; --surface-hi: #262B30; --surface-low: #15181B;
+          --primary: #DAE2FD; --on-primary: #131B2E;
+          --secondary-container: #3A4A63; --on-secondary-container: #B8C6E0;
+          --primary-fixed: #3A4A63; --primary-container: #2A3550;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0;
+          --outline: #8D9199; --outline-variant: #43474E;
+          --income: #6DDD8C; --expense: #FFB4AB;
         }
         .historial-buscar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; }
         .historial-buscar input { flex: 1; border: none; background: transparent; font-family: Inter, sans-serif; font-size: 16px; color: var(--on-surface); outline: none; }

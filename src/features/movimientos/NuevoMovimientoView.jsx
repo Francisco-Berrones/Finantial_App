@@ -85,6 +85,13 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = []
           --outline: #76777D; --outline-variant: #C6C6CD;
           min-height: 100vh; min-height: 100dvh;
           background: var(--bg); font-family: Inter, sans-serif; color: var(--on-surface);
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .app-root[data-theme="dark"] .nm-root {
+          --bg: #101317; --surface: #1B1F23; --surface-low: #15181B;
+          --primary: #DAE2FD; --on-primary: #131B2E; --primary-fixed: #3A4A63; --primary-container: #2A3550; --on-primary-container: #A9B3CE;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0;
+          --outline: #8D9199; --outline-variant: #43474E;
         }
         .nm-header { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 14px 12px; display: flex; align-items: center; }
         .nm-back { width: 40px; height: 40px; border-radius: 9999px; background: none; border: none; color: var(--on-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

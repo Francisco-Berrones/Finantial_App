@@ -8,7 +8,7 @@ import { useMsiDetalle } from "./useMsiDetalle";
 import MovimientoCard from "../movimientos/MovimientoCard";
 import NuevaCompraMsiModal from "./NuevaCompraMsiModal";
 
-export default function TarjetaDetalleView({ tarjeta, categorias = [], movimientos = [], crearCategoria, onBack, onGuardarCortePago, onRegistrada, onVerHistorial, onVerAnalisis }) {
+export default function TarjetaDetalleView({ tarjeta, categorias = [], movimientos = [], crearCategoria, onBack, onGuardarCortePago, onRegistrada, onVerHistorial }) {
   const { compras, cargando, fetchMsi, registrarCompra } = useMsiDetalle(tarjeta?.id);
   const [editando, setEditando] = useState(false);
   const [diaCorte, setDiaCorte] = useState("");
@@ -68,6 +68,13 @@ export default function TarjetaDetalleView({ tarjeta, categorias = [], movimient
           --outline: #76777D; --outline-variant: #C6C6CD; --expense: #BA1A1A;
           min-height: 100vh; min-height: 100dvh;
           background: var(--bg); font-family: Inter, sans-serif; color: var(--on-surface);
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .app-root[data-theme="dark"] .tarjeta-det-root {
+          --bg: #101317; --surface: #1B1F23; --surface-low: #15181B; --surface-hi: #262B30;
+          --primary: #DAE2FD; --on-primary: #131B2E; --primary-container: #2A3550;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0; --on-secondary-container: #B8C6E0;
+          --outline: #8D9199; --outline-variant: #43474E; --expense: #FFB4AB;
         }
         .tarjeta-det-header { position: sticky; top: 0; z-index: 10; background: var(--bg); padding: 14px 12px; display: flex; align-items: center; }
         .tarjeta-det-back { width: 40px; height: 40px; border-radius: 9999px; background: none; border: none; color: var(--on-surface); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -91,10 +98,8 @@ export default function TarjetaDetalleView({ tarjeta, categorias = [], movimient
 
         .tarjeta-det-bento { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .tarjeta-det-bento-limite { grid-column: span 2; background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 16px; padding: 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-        .tarjeta-det-bento-card { background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 16px; padding: 16px; width: 100%; box-sizing: border-box; text-align: left; font-family: Inter, sans-serif; }
+        .tarjeta-det-bento-card { background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 16px; padding: 16px; }
         .tarjeta-det-bento-card.deuda { border-left: 4px solid var(--expense); }
-        button.tarjeta-det-bento-card:not(:disabled) { cursor: pointer; }
-        button.tarjeta-det-bento-card:not(:disabled):active { transform: scale(0.98); }
         .tarjeta-det-bento-label { font-size: 12px; color: var(--on-surface-variant); margin: 0 0 4px; }
         .tarjeta-det-bento-valor { font-size: 18px; font-weight: 700; color: var(--on-surface); }
         .tarjeta-det-bento-valor.aviso { color: var(--expense); }
@@ -183,15 +188,10 @@ export default function TarjetaDetalleView({ tarjeta, categorias = [], movimient
             <p className="tarjeta-det-bento-label">Disponible</p>
             <p className="tarjeta-det-bento-valor mono">{fmt(disponible)}</p>
           </div>
-          <button
-            className="tarjeta-det-bento-card deuda"
-            data-testid="tarjeta-detalle-deuda-button"
-            onClick={onVerAnalisis}
-            disabled={!onVerAnalisis}
-          >
+          <div className="tarjeta-det-bento-card deuda">
             <p className="tarjeta-det-bento-label">Deuda Total</p>
             <p className="tarjeta-det-bento-valor aviso mono">{fmt(tarjeta.saldo_usado)}</p>
-          </button>
+          </div>
         </div>
 
         <div className="tarjeta-det-section-head">

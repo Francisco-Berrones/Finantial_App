@@ -150,9 +150,19 @@ export default function AsesorChatView({ session, onBack }) {
           --on-surface-variant: #44474E;
           --outline: #76777D;
           --outline-variant: #C6C6CD;
+          --glass: rgba(255,255,255,0.75);
 
           height: 100vh; height: 100dvh; display: flex; flex-direction: column;
           background: var(--bg); font-family: Inter, sans-serif; color: var(--on-surface);
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .app-root[data-theme="dark"] .asesor-root {
+          --bg: #101317; --surface: #1B1F23; --surface-hi: #262B30;
+          --primary: #DAE2FD; --on-primary: #131B2E; --primary-container: #2A3550; --on-primary-container: #A9B3CE;
+          --secondary-container: #3A4A63; --on-secondary-container: #B8C6E0;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0;
+          --outline: #8D9199; --outline-variant: #43474E;
+          --glass: rgba(27,31,35,0.75);
         }
         .asesor-header { flex-shrink: 0; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 14px 12px; display: flex; align-items: center; gap: 8px; }
         .asesor-back, .asesor-history-btn { width: 40px; height: 40px; border-radius: 9999px; background: none; border: none; color: var(--on-surface-variant); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -179,7 +189,7 @@ export default function AsesorChatView({ session, onBack }) {
         .asesor-chip:active { transform: scale(0.96); }
 
         .asesor-footer { flex-shrink: 0; padding: 0 16px calc(16px + env(safe-area-inset-bottom)); }
-        .asesor-input-bar { display: flex; align-items: flex-end; gap: 8px; background: rgba(255,255,255,0.75); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--outline-variant); border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); padding: 6px 6px 6px 16px; }
+        .asesor-input-bar { display: flex; align-items: flex-end; gap: 8px; background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid var(--outline-variant); border-radius: 16px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); padding: 6px 6px 6px 16px; }
         .asesor-input { flex: 1; min-width: 0; font-family: Inter, sans-serif; font-size: 16px; border: none; background: transparent; color: var(--on-surface); resize: none; max-height: 120px; overflow-y: auto; line-height: 1.5; padding: 10px 0; outline: none; scrollbar-width: none; -ms-overflow-style: none; }
         .asesor-input::-webkit-scrollbar { display: none; }
         .asesor-input::placeholder { color: var(--outline); }

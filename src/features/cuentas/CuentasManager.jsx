@@ -17,6 +17,12 @@ export default function CuentasManager({ cuentas, deleteCuenta, onChange }) {
           --on-surface: #1A1C1E; --expense: #BA1A1A;
           font-family: Inter, sans-serif; color: var(--on-surface);
         }
+        .app-root[data-theme="dark"] .cuentas-sec-root {
+          --surface: #1B1F23; --surface-low: #15181B;
+          --primary-container: #2A3550;
+          --secondary-container: #3A4A63; --on-secondary-container: #B8C6E0;
+          --on-surface: #E2E2E6; --expense: #FFB4AB;
+        }
         .cuentas-sec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .cuentas-sec-head svg { color: var(--primary-container); }
         .cuentas-sec-titulo { font-size: 18px; font-weight: 600; color: var(--on-surface); }

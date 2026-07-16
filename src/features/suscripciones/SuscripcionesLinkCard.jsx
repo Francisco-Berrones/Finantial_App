@@ -15,6 +15,10 @@ export default function SuscripcionesLinkCard({ suscripciones, onClick }) {
           --on-surface: #1A1C1E; --on-surface-variant: #44474E;
           font-family: Inter, sans-serif; margin-top: 28px;
         }
+        .app-root[data-theme="dark"] .suscripciones-link-root {
+          --surface: #1B1F23; --outline-variant: #43474E; --primary-container: #2A3550; --on-primary: #131B2E;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0;
+        }
         .suscripciones-link-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .suscripciones-link-head svg { color: var(--primary-container); }
         .suscripciones-link-titulo { font-size: 18px; font-weight: 600; color: var(--on-surface); }

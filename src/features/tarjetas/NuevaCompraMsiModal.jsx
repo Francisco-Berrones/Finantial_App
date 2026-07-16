@@ -29,37 +29,49 @@ export default function NuevaCompraMsiModal({ categorias, crearCategoria, onGuar
   return (
     <div className="nueva-msi-backdrop" data-testid="nueva-compra-msi-backdrop" onClick={onClose}>
       <style>{`
-        .nueva-msi-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
-        .nueva-msi-sheet { width: 100%; max-width: 480px; max-height: 92vh; background: #F7F9FB; border-radius: 28px 28px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; font-family: Inter, sans-serif; }
-        .nueva-msi-handle { width: 40px; height: 6px; background: #E0E3E5; border-radius: 9999px; margin: 12px auto 0; }
+        .nueva-msi-backdrop {
+          --bg: #F7F9FB; --surface: #FFFFFF; --surface-low: #F2F4F6; --surface-hi: #E6E8EA; --chip-bg: #ECEEF0;
+          --on-surface: #1A1C1E; --on-surface-variant: #44474E; --outline: #76777D; --outline-variant: #C6C6CD;
+          --primary: #000000; --on-primary: #FFFFFF; --primary-container: #131B2E;
+          --secondary-container: #D5E3FD; --primary-fixed: #DAE2FD;
+          position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: flex-end; justify-content: center;
+        }
+        .app-root[data-theme="dark"] .nueva-msi-backdrop {
+          --bg: #1B1F23; --surface: #262B30; --surface-low: #15181B; --surface-hi: #262B30; --chip-bg: #262B30;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0; --outline: #8D9199; --outline-variant: #43474E;
+          --primary: #DAE2FD; --on-primary: #131B2E; --primary-container: #2A3550;
+          --secondary-container: #3A4A63; --primary-fixed: #3A4A63;
+        }
+        .nueva-msi-sheet { width: 100%; max-width: 480px; max-height: 92vh; background: var(--bg); border-radius: 28px 28px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; font-family: Inter, sans-serif; }
+        .nueva-msi-handle { width: 40px; height: 6px; background: var(--surface-hi); border-radius: 9999px; margin: 12px auto 0; }
         .nueva-msi-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; }
-        .nueva-msi-titulo { font-size: 18px; font-weight: 700; color: #1A1C1E; }
-        .nueva-msi-close { width: 32px; height: 32px; border-radius: 9999px; background: #E6E8EA; border: none; color: #44474E; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .nueva-msi-titulo { font-size: 18px; font-weight: 700; color: var(--on-surface); }
+        .nueva-msi-close { width: 32px; height: 32px; border-radius: 9999px; background: var(--surface-hi); border: none; color: var(--on-surface-variant); display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .nueva-msi-body { flex: 1; overflow-y: auto; padding: 0 20px calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 20px; }
 
-        .nueva-msi-field label { display: block; font-size: 12px; font-weight: 500; color: #44474E; margin: 0 0 6px 4px; }
-        .nueva-msi-field input { width: 100%; box-sizing: border-box; height: 52px; background: #FFFFFF; border: none; border-radius: 14px; padding: 0 16px; font-family: Inter, sans-serif; font-size: 16px; font-weight: 600; color: #1A1C1E; outline: none; }
+        .nueva-msi-field label { display: block; font-size: 12px; font-weight: 500; color: var(--on-surface-variant); margin: 0 0 6px 4px; }
+        .nueva-msi-field input { width: 100%; box-sizing: border-box; height: 52px; background: var(--surface); border: none; border-radius: 14px; padding: 0 16px; font-family: Inter, sans-serif; font-size: 16px; font-weight: 600; color: var(--on-surface); outline: none; }
         .nueva-msi-money-wrap { position: relative; }
-        .nueva-msi-money-wrap span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 22px; font-weight: 700; color: #44474E; pointer-events: none; }
+        .nueva-msi-money-wrap span { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 22px; font-weight: 700; color: var(--on-surface-variant); pointer-events: none; }
         .nueva-msi-money-wrap input { padding-left: 32px; font-size: 22px; }
 
         .nueva-msi-chips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
-        .nueva-msi-chip { height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 2px solid #ECEEF0; background: #ECEEF0; color: #44474E; font-family: Inter, sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; }
-        .nueva-msi-chip.selected { border-color: #131B2E; background: #DAE2FD; color: #131B2E; }
+        .nueva-msi-chip { height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 10px; border: 2px solid var(--chip-bg); background: var(--chip-bg); color: var(--on-surface-variant); font-family: Inter, sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; }
+        .nueva-msi-chip.selected { border-color: var(--primary-container); background: var(--primary-fixed); color: var(--primary-container); }
 
-        .nueva-msi-estimado { background: #F2F4F6; border-radius: 14px; padding: 18px; display: flex; align-items: center; justify-content: space-between; }
-        .nueva-msi-estimado-label { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #44474E; margin: 0 0 4px; }
-        .nueva-msi-estimado-valor { font-size: 26px; font-weight: 700; color: #1A1C1E; }
-        .nueva-msi-estimado-icon { width: 44px; height: 44px; border-radius: 9999px; background: #D5E3FD; color: #131B2E; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .nueva-msi-estimado { background: var(--surface-low); border-radius: 14px; padding: 18px; display: flex; align-items: center; justify-content: space-between; }
+        .nueva-msi-estimado-label { font-size: 11px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--on-surface-variant); margin: 0 0 4px; }
+        .nueva-msi-estimado-valor { font-size: 26px; font-weight: 700; color: var(--on-surface); }
+        .nueva-msi-estimado-icon { width: 44px; height: 44px; border-radius: 9999px; background: var(--secondary-container); color: var(--primary-container); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        .nueva-msi-row-btn { width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 16px; background: #FFFFFF; border: 1px solid rgba(198,198,205,0.4); border-radius: 14px; cursor: pointer; font-family: Inter, sans-serif; }
+        .nueva-msi-row-btn { width: 100%; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; height: 52px; padding: 0 16px; background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 14px; cursor: pointer; font-family: Inter, sans-serif; }
         .nueva-msi-row-left { display: flex; align-items: center; gap: 10px; }
         .nueva-msi-row-icono { width: 24px; height: 24px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .nueva-msi-row-label { font-size: 15px; font-weight: 600; color: #1A1C1E; }
-        .nueva-msi-row-static { width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px; background: #FFFFFF; border: 1px solid rgba(198,198,205,0.4); border-radius: 14px; color: #44474E; }
-        .nueva-msi-row-static span { font-size: 15px; font-weight: 600; color: #1A1C1E; }
+        .nueva-msi-row-label { font-size: 15px; font-weight: 600; color: var(--on-surface); }
+        .nueva-msi-row-static { width: 100%; box-sizing: border-box; display: flex; align-items: center; gap: 10px; height: 52px; padding: 0 16px; background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 14px; color: var(--on-surface-variant); }
+        .nueva-msi-row-static span { font-size: 15px; font-weight: 600; color: var(--on-surface); }
 
-        .nueva-msi-guardar { width: 100%; box-sizing: border-box; height: 56px; background: #000000; color: #fff; border: none; border-radius: 14px; font-family: Inter, sans-serif; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .nueva-msi-guardar { width: 100%; box-sizing: border-box; height: 56px; background: var(--primary); color: var(--on-primary); border: none; border-radius: 14px; font-family: Inter, sans-serif; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center; gap: 8px; }
         .nueva-msi-guardar:active { transform: scale(0.98); }
         .nueva-msi-guardar:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>
@@ -149,14 +161,14 @@ export default function NuevaCompraMsiModal({ categorias, crearCategoria, onGuar
                   </>
                 ) : (
                   <>
-                    <span className="nueva-msi-row-icono" style={{ background: "#ECEEF0", color: "#44474E" }}>
+                    <span className="nueva-msi-row-icono" style={{ background: "var(--chip-bg)", color: "var(--on-surface-variant)" }}>
                       <Tag size={14} />
                     </span>
                     <span className="nueva-msi-row-label">Sin categoría</span>
                   </>
                 )}
               </span>
-              <ChevronRight size={18} color="#76777D" />
+              <ChevronRight size={18} color="var(--outline)" />
             </button>
           </div>
 

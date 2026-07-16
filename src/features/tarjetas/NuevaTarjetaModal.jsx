@@ -23,13 +23,23 @@ export default function NuevaTarjetaModal({ onGuardar, onClose }) {
   return (
     <div className="nueva-tarjeta-backdrop" data-testid="nueva-tarjeta-backdrop" onClick={onClose}>
       <style>{`
-        .nueva-tarjeta-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
-        .nueva-tarjeta-sheet { width: 100%; max-width: 480px; max-height: 92vh; background: #F7F9FB; border-radius: 28px 28px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; font-family: Inter, sans-serif; }
-        .nueva-tarjeta-handle { width: 40px; height: 6px; background: #E0E3E5; border-radius: 9999px; margin: 12px auto 0; }
+        .nueva-tarjeta-backdrop {
+          --bg: #F7F9FB; --surface-low: #F2F4F6; --surface-hi: #E6E8EA;
+          --on-surface: #1A1C1E; --on-surface-variant: #44474E; --outline-variant: #C6C6CD;
+          --primary: #000000; --on-primary: #FFFFFF; --primary-container: #131B2E;
+          position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: flex-end; justify-content: center;
+        }
+        .app-root[data-theme="dark"] .nueva-tarjeta-backdrop {
+          --bg: #1B1F23; --surface-low: #15181B; --surface-hi: #262B30;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0; --outline-variant: #43474E;
+          --primary: #DAE2FD; --on-primary: #131B2E; --primary-container: #2A3550;
+        }
+        .nueva-tarjeta-sheet { width: 100%; max-width: 480px; max-height: 92vh; background: var(--bg); border-radius: 28px 28px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; font-family: Inter, sans-serif; }
+        .nueva-tarjeta-handle { width: 40px; height: 6px; background: var(--surface-hi); border-radius: 9999px; margin: 12px auto 0; }
         .nueva-tarjeta-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; }
-        .nueva-tarjeta-titulo { font-size: 18px; font-weight: 600; color: #1A1C1E; }
-        .nueva-tarjeta-close { width: 40px; height: 40px; border-radius: 9999px; background: none; border: none; color: #44474E; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .nueva-tarjeta-close:active { background: #E6E8EA; }
+        .nueva-tarjeta-titulo { font-size: 18px; font-weight: 600; color: var(--on-surface); }
+        .nueva-tarjeta-close { width: 40px; height: 40px; border-radius: 9999px; background: none; border: none; color: var(--on-surface-variant); display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .nueva-tarjeta-close:active { background: var(--surface-hi); }
         .nueva-tarjeta-body { flex: 1; overflow-y: auto; padding: 0 20px calc(24px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 24px; }
 
         .nueva-tarjeta-preview { width: 100%; aspect-ratio: 1.58 / 1; border-radius: 20px; padding: 20px; color: #fff; display: flex; flex-direction: column; justify-content: space-between; box-shadow: 0 10px 24px rgba(0,0,0,0.18); position: relative; overflow: hidden; transition: background-color 0.3s ease; }
@@ -44,18 +54,18 @@ export default function NuevaTarjetaModal({ onGuardar, onClose }) {
 
         .nueva-tarjeta-fields { display: flex; flex-direction: column; gap: 16px; }
         .nueva-tarjeta-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .nueva-tarjeta-field label { display: block; font-size: 12px; font-weight: 500; color: #44474E; margin: 0 0 6px; }
-        .nueva-tarjeta-field input, .nueva-tarjeta-field select { width: 100%; box-sizing: border-box; height: 48px; background: #F2F4F6; border: 1px solid #C6C6CD; border-radius: 12px; padding: 0 14px; font-family: Inter, sans-serif; font-size: 15px; color: #1A1C1E; outline: none; appearance: none; }
-        .nueva-tarjeta-field input:focus, .nueva-tarjeta-field select:focus { border-color: #131B2E; }
+        .nueva-tarjeta-field label { display: block; font-size: 12px; font-weight: 500; color: var(--on-surface-variant); margin: 0 0 6px; }
+        .nueva-tarjeta-field input, .nueva-tarjeta-field select { width: 100%; box-sizing: border-box; height: 48px; background: var(--surface-low); border: 1px solid var(--outline-variant); border-radius: 12px; padding: 0 14px; font-family: Inter, sans-serif; font-size: 15px; color: var(--on-surface); outline: none; appearance: none; }
+        .nueva-tarjeta-field input:focus, .nueva-tarjeta-field select:focus { border-color: var(--primary-container); }
         .nueva-tarjeta-money-wrap { position: relative; }
-        .nueva-tarjeta-money-wrap span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #44474E; pointer-events: none; }
+        .nueva-tarjeta-money-wrap span { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--on-surface-variant); pointer-events: none; }
         .nueva-tarjeta-money-wrap input { padding-left: 26px; }
 
         .nueva-tarjeta-colores { display: flex; gap: 12px; overflow-x: auto; flex-wrap: wrap; }
         .nueva-tarjeta-color-btn { flex-shrink: 0; width: 36px; height: 36px; border-radius: 9999px; border: 2px solid transparent; cursor: pointer; box-shadow: 0 0 0 2px transparent; }
-        .nueva-tarjeta-color-btn.selected { box-shadow: 0 0 0 2px #F7F9FB, 0 0 0 4px #131B2E; }
+        .nueva-tarjeta-color-btn.selected { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--primary-container); }
 
-        .nueva-tarjeta-guardar { display: block; box-sizing: border-box; width: 100%; margin: 0; height: 56px; background: #000000; color: #fff; border: none; border-radius: 12px; font-family: Inter, sans-serif; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.15); transition: opacity 0.15s ease, transform 0.15s ease; }
+        .nueva-tarjeta-guardar { display: block; box-sizing: border-box; width: 100%; margin: 0; height: 56px; background: var(--primary); color: var(--on-primary); border: none; border-radius: 12px; font-family: Inter, sans-serif; font-size: 18px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 16px rgba(0,0,0,0.15); transition: opacity 0.15s ease, transform 0.15s ease; }
         .nueva-tarjeta-guardar:hover { opacity: 0.9; }
         .nueva-tarjeta-guardar:active { transform: scale(0.95); }
       `}</style>
@@ -150,7 +160,7 @@ export default function NuevaTarjetaModal({ onGuardar, onClose }) {
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "#44474E", margin: "0 0 10px" }}>Personalizar Color</label>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 500, color: "var(--on-surface-variant)", margin: "0 0 10px" }}>Personalizar Color</label>
               <div className="nueva-tarjeta-colores">
                 {COLORES_DISPONIBLES.map((c) => (
                   <button

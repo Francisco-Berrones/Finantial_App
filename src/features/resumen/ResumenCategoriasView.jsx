@@ -131,6 +131,15 @@ export default function ResumenCategoriasView({ movimientos, onBack }) {
           --income: #1B5E20; --expense: #BA1A1A;
           min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
           background: var(--bg); font-family: Inter, sans-serif; color: var(--on-surface);
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .app-root[data-theme="dark"] .resumen-nuevo-root {
+          --bg: #101317; --surface: #1B1F23; --surface-hi: #262B30; --surface-low: #15181B;
+          --primary: #DAE2FD; --on-primary: #131B2E;
+          --secondary-container: #3A4A63; --on-secondary-container: #B8C6E0;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0;
+          --outline: #8D9199; --outline-variant: #43474E;
+          --income: #6DDD8C; --expense: #FFB4AB;
         }
         .resumen-header { flex-shrink: 0; background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 14px 12px; display: flex; align-items: center; gap: 8px; }
         .resumen-back { width: 40px; height: 40px; border-radius: 9999px; background: none; border: none; color: var(--primary); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }

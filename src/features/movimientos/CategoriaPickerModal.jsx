@@ -22,39 +22,49 @@ export default function CategoriaPickerModal({ categorias, crearCategoria, onSel
   return (
     <div className="cat-picker-backdrop" data-testid="categoria-picker-backdrop" onClick={onClose}>
       <style>{`
-        .cat-picker-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: flex-end; justify-content: center; }
-        .cat-picker-sheet { width: 100%; max-width: 480px; max-height: 90vh; background: #F7F9FB; border-radius: 32px 32px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; font-family: Inter, sans-serif; }
-        .cat-picker-handle { width: 48px; height: 6px; background: #E0E3E5; border-radius: 9999px; margin: 12px auto 16px; }
+        .cat-picker-backdrop {
+          --bg: #F7F9FB; --surface-low: #F2F4F6; --surface-hi: #E6E8EA;
+          --on-surface: #1A1C1E; --on-surface-variant: #44474E;
+          --outline: #76777D; --outline-variant: #C6C6CD; --primary-container: #131B2E; --on-primary: #FFFFFF;
+          position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); z-index: 60; display: flex; align-items: flex-end; justify-content: center;
+        }
+        .app-root[data-theme="dark"] .cat-picker-backdrop {
+          --bg: #1B1F23; --surface-low: #15181B; --surface-hi: #262B30;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0;
+          --outline: #8D9199; --outline-variant: #43474E; --primary-container: #2A3550; --on-primary: #131B2E;
+        }
+        .cat-picker-sheet { width: 100%; max-width: 480px; max-height: 90vh; background: var(--bg); border-radius: 32px 32px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; font-family: Inter, sans-serif; }
+        .cat-picker-handle { width: 48px; height: 6px; background: var(--surface-hi); border-radius: 9999px; margin: 12px auto 16px; }
         .cat-picker-head { display: flex; align-items: center; justify-content: space-between; padding: 0 20px 12px; }
-        .cat-picker-titulo { font-size: 18px; font-weight: 600; color: #1A1C1E; }
-        .cat-picker-close { width: 32px; height: 32px; border-radius: 9999px; background: #E6E8EA; border: none; color: #44474E; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .cat-picker-titulo { font-size: 18px; font-weight: 600; color: var(--on-surface); }
+        .cat-picker-close { width: 32px; height: 32px; border-radius: 9999px; background: var(--surface-hi); border: none; color: var(--on-surface-variant); display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .cat-picker-buscar-wrap { padding: 0 20px 16px; }
         .cat-picker-buscar { position: relative; display: flex; align-items: center; }
-        .cat-picker-buscar svg { position: absolute; left: 14px; color: #76777D; pointer-events: none; }
-        .cat-picker-buscar input { width: 100%; box-sizing: border-box; height: 48px; padding: 0 16px 0 42px; background: #F2F4F6; border: none; border-radius: 12px; font-family: Inter, sans-serif; font-size: 16px; color: #1A1C1E; outline: none; }
-        .cat-picker-buscar input:focus { box-shadow: 0 0 0 2px #131B2E; }
+        .cat-picker-buscar svg { position: absolute; left: 14px; color: var(--outline); pointer-events: none; }
+        .cat-picker-buscar input { width: 100%; box-sizing: border-box; height: 48px; padding: 0 16px 0 42px; background: var(--surface-low); border: none; border-radius: 12px; font-family: Inter, sans-serif; font-size: 16px; color: var(--on-surface); outline: none; }
+        .cat-picker-buscar input:focus { box-shadow: 0 0 0 2px var(--primary-container); }
         .cat-picker-grid-wrap { flex: 1; overflow-y: auto; padding: 0 20px calc(24px + env(safe-area-inset-bottom)); }
         .cat-picker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
         .cat-picker-item { display: flex; flex-direction: column; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; font-family: Inter, sans-serif; }
         .cat-picker-item:active { transform: scale(0.95); }
         .cat-picker-item-icono { width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center; }
-        .cat-picker-item-nombre { font-size: 13px; font-weight: 500; color: #1A1C1E; text-align: center; }
-        .cat-picker-item-nueva .cat-picker-item-icono { border: 2px dashed #C6C6CD; color: #44474E; }
-        .cat-picker-empty { color: #44474E; font-size: 14px; text-align: center; padding: 24px 0; grid-column: 1 / -1; }
+        .cat-picker-item-nombre { font-size: 13px; font-weight: 500; color: var(--on-surface); text-align: center; }
+        .cat-picker-item-nueva .cat-picker-item-icono { border: 2px dashed var(--outline-variant); color: var(--on-surface-variant); }
+        .cat-picker-empty { color: var(--on-surface-variant); font-size: 14px; text-align: center; padding: 24px 0; grid-column: 1 / -1; }
         .cat-picker-crear-form { display: flex; flex-direction: column; gap: 20px; }
-        .cat-picker-crear-label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: #76777D; margin: 0 0 8px 4px; }
-        .cat-picker-crear-form input[type="text"] { box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; background: #F2F4F6; border: 1px solid #C6C6CD; border-radius: 12px; font-family: Inter, sans-serif; font-size: 16px; color: #1A1C1E; outline: none; }
-        .cat-picker-crear-form input[type="text"]:focus { border-color: #131B2E; }
+        .cat-picker-crear-label { display: block; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--outline); margin: 0 0 8px 4px; }
+        .cat-picker-crear-form input[type="text"] { box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; background: var(--surface-low); border: 1px solid var(--outline-variant); border-radius: 12px; font-family: Inter, sans-serif; font-size: 16px; color: var(--on-surface); outline: none; }
+        .cat-picker-crear-form input[type="text"]:focus { border-color: var(--primary-container); }
         .cat-picker-icono-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .cat-picker-icono-btn { aspect-ratio: 1; border-radius: 12px; background: #F2F4F6; border: 2px solid transparent; color: #44474E; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .cat-picker-icono-btn { aspect-ratio: 1; border-radius: 12px; background: var(--surface-low); border: 2px solid transparent; color: var(--on-surface-variant); display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .cat-picker-icono-btn.selected { background: var(--sel-bg); color: var(--sel-color); border-color: var(--sel-color); }
         .cat-picker-color-row { display: flex; gap: 16px; }
         .cat-picker-color-btn { width: 32px; height: 32px; border-radius: 9999px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 0 0 2px transparent; }
-        .cat-picker-color-btn.selected { box-shadow: 0 0 0 2px #F7F9FB, 0 0 0 4px var(--sel-color); }
+        .cat-picker-color-btn.selected { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--sel-color); }
         .cat-picker-crear-form-btns { display: flex; gap: 12px; padding-top: 4px; }
         .cat-picker-crear-form-btns button { flex: 1; padding: 12px; border-radius: 9999px; font-family: Inter, sans-serif; font-size: 15px; font-weight: 600; cursor: pointer; }
-        .cat-picker-crear-btn { background: #131B2E; color: #fff; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .cat-picker-cancelar-btn { background: none; border: 1px solid #C6C6CD; color: #131B2E; }
+        .cat-picker-crear-btn { background: var(--primary-container); color: var(--on-primary); border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .cat-picker-cancelar-btn { background: none; border: 1px solid var(--outline-variant); color: var(--on-surface); }
       `}</style>
 
       <div className="cat-picker-sheet" onClick={(e) => e.stopPropagation()}>

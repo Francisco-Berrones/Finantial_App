@@ -50,6 +50,14 @@ export default function HistorialConversacionesView({ conversaciones, conversaci
 
           min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column;
           background: var(--bg); font-family: Inter, sans-serif; color: var(--on-surface);
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .app-root[data-theme="dark"] .historial-ia-root {
+          --bg: #101317; --surface: #1B1F23; --surface-hi: #262B30; --surface-low: #15181B;
+          --primary: #DAE2FD; --on-primary: #131B2E;
+          --secondary-container: #3A4A63; --on-secondary-container: #B8C6E0;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0;
+          --outline: #8D9199; --outline-variant: #43474E;
         }
         .historial-ia-header { position: sticky; top: 0; z-index: 10; background: var(--bg); flex-shrink: 0; }
         .historial-ia-header-row { display: flex; align-items: center; height: 64px; padding: 0 8px; position: relative; }

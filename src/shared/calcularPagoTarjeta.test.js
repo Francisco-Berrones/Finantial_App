@@ -34,6 +34,39 @@ describe("proximoPagoDeTarjeta", () => {
     const resultado = proximoPagoDeTarjeta({ id: "t1", dia_corte: null, dia_pago: 15 }, [], []);
     expect(resultado).toBeNull();
   });
+
+  it("subtracts pagos already made to this tarjeta since the corte closed", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 7)); // último corte fue el 25 de junio
+
+    const tarjeta = { id: "t1", dia_corte: 25, dia_pago: 15 };
+    const movimientos = [
+      { tipo_accion: "gasto_credito", target_id: "t1", monto: 500, nota: "", fecha: "2026-06-10T00:00:00Z" },
+      // Pago parcial ya hecho después de que cerró el corte
+      { tipo_accion: "pago_tarjeta", target_id: "t1", monto: 200, nota: "", fecha: "2026-07-02T00:00:00Z" },
+      // Pago a otra tarjeta -- no debe descontarse de esta
+      { tipo_accion: "pago_tarjeta", target_id: "t2", monto: 999, nota: "", fecha: "2026-07-02T00:00:00Z" },
+    ];
+
+    const resultado = proximoPagoDeTarjeta(tarjeta, movimientos, []);
+
+    expect(resultado.monto).toBeCloseTo(300, 2);
+  });
+
+  it("never returns a negative monto when payments exceed the amount owed", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 7));
+
+    const tarjeta = { id: "t1", dia_corte: 25, dia_pago: 15 };
+    const movimientos = [
+      { tipo_accion: "gasto_credito", target_id: "t1", monto: 500, nota: "", fecha: "2026-06-10T00:00:00Z" },
+      { tipo_accion: "pago_tarjeta", target_id: "t1", monto: 500, nota: "", fecha: "2026-07-02T00:00:00Z" },
+    ];
+
+    const resultado = proximoPagoDeTarjeta(tarjeta, movimientos, []);
+
+    expect(resultado.monto).toBe(0);
+  });
 });
 
 describe("proximaTarjetaAPagar", () => {
@@ -57,6 +90,25 @@ describe("proximaTarjetaAPagar", () => {
 
     const resultado = proximaTarjetaAPagar(tarjetas, movimientos, []);
     expect(resultado.tarjeta.id).toBe("cerca");
+  });
+
+  it("switches to the next closest tarjeta once the nearest one is fully paid off", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 7));
+
+    const tarjetas = [
+      { id: "lejos", nombre: "Lejos", dia_corte: 1, dia_pago: 20 }, // próximo pago más lejano (20 julio)
+      { id: "cerca", nombre: "Cerca", dia_corte: 1, dia_pago: 8 }, // próximo pago más cercano, pero ya pagada
+    ];
+    const movimientos = [
+      { tipo_accion: "gasto_credito", target_id: "lejos", monto: 100, nota: "", fecha: "2026-06-15T00:00:00Z" },
+      { tipo_accion: "gasto_credito", target_id: "cerca", monto: 200, nota: "", fecha: "2026-06-10T00:00:00Z" },
+      // El usuario ya liquidó "cerca" -- debe dejar de aparecer como pendiente
+      { tipo_accion: "pago_tarjeta", target_id: "cerca", monto: 200, nota: "", fecha: "2026-07-02T00:00:00Z" },
+    ];
+
+    const resultado = proximaTarjetaAPagar(tarjetas, movimientos, []);
+    expect(resultado.tarjeta.id).toBe("lejos");
   });
 
   it("returns null when no tarjeta has anything due", () => {

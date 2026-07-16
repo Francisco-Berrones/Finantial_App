@@ -34,6 +34,13 @@ export default function MainApp({ session }) {
   const [viewAntesDetalle, setViewAntesDetalle] = useState("inicio");
   const [mostrarPendientes, setMostrarPendientes] = useState(false);
   const [presetPagoTarjetaId, setPresetPagoTarjetaId] = useState(null);
+  const [oscuro, setOscuro] = useState(() => localStorage.getItem("fintrack-modo-oscuro") === "1");
+
+  const toggleOscuro = () => {
+    const nuevo = !oscuro;
+    setOscuro(nuevo);
+    localStorage.setItem("fintrack-modo-oscuro", nuevo ? "1" : "0");
+  };
 
   const pendientesSuscripciones = suscripciones.filter((s) => s.pendiente_confirmar);
 
@@ -84,7 +91,7 @@ export default function MainApp({ session }) {
   };
 
   return (
-    <div className="app-root">
+    <div className="app-root" data-theme={oscuro ? "dark" : "light"}>
       <style>{`
         .app-root {
           --paper: #DEDACA; --paper-card: #F6F3E9; --paper-line: #CBC3AC;
@@ -97,6 +104,14 @@ export default function MainApp({ session }) {
           min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative;
           box-sizing: border-box;
           overflow-x: hidden;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+        .app-root[data-theme="dark"] {
+          --paper: #24211C; --paper-card: #2E2A23; --paper-line: #46413685;
+          --ink: #E9E4D8; --ink-soft: #A69E8C;
+          --credito: #E8927D; --credito-soft: #4A2A22;
+          --ahorro: #7FC7A2; --ahorro-soft: #21372B;
+          --bg: #101317; --surface: #1B1F23; --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0; --outline-variant: #43474E; --primary: #DAE2FD;
         }
         .app-root * { box-sizing: border-box; }
         .mono { font-family: Figtree; font-variant-numeric: tabular-nums; }
@@ -245,7 +260,7 @@ export default function MainApp({ session }) {
         </motion.div>
       ) : view == "ajustes" ? (
         <motion.div key="ajustes" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
-        <AjustesView session={session} onBack={() => setView("inicio")} />
+        <AjustesView session={session} oscuro={oscuro} onToggleOscuro={toggleOscuro} onBack={() => setView("inicio")} />
         </motion.div>
       ) : view === "nuevaCuenta" ? (
         <motion.div key="nuevaCuenta" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
@@ -285,7 +300,6 @@ export default function MainApp({ session }) {
           }}
           onRegistrada={fetchAll}
           onVerHistorial={() => setView("historial")}
-          onVerAnalisis={() => setView("resumen")}
         />
         </motion.div>
       ) : (

@@ -31,6 +31,12 @@ const TarjetasManager = forwardRef(function TarjetasManager({ tarjetas, session,
           --outline: #76777D; --outline-variant: #C6C6CD; --expense: #BA1A1A;
           font-family: Inter, sans-serif; color: var(--on-surface); margin-top: 28px;
         }
+        .app-root[data-theme="dark"] .tarjetas-sec-root {
+          --surface: #1B1F23; --surface-low: #15181B; --surface-hi: #262B30;
+          --primary: #DAE2FD; --primary-container: #2A3550; --on-primary: #131B2E;
+          --on-surface: #E2E2E6; --on-surface-variant: #C4C6D0; --on-secondary-container: #B8C6E0;
+          --outline: #8D9199; --outline-variant: #43474E; --expense: #FFB4AB;
+        }
         .tarjetas-sec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
         .tarjetas-sec-head svg { color: var(--primary-container); }
         .tarjetas-sec-titulo { font-size: 18px; font-weight: 600; color: var(--on-surface); }
