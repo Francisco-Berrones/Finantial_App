@@ -1,22 +1,9 @@
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import MovimientoRow from "./MovimientoRow";
-import { ACCIONES } from "../../shared/constants";
-import { fmtMesAno } from "../../shared/format";
+import { Search, Calendar, ArrowUp, ArrowDown } from "lucide-react";
+import MovimientoCard from "./MovimientoCard";
+import { fmt, fmtMesAno, fmtDiaCorto, fmtDiaLargo } from "../../shared/format";
 
-function agruparPorMes(movimientos) {
-  const grupos = [];
-  let actual = null;
-  movimientos.forEach((m) => {
-    const clave = fmtMesAno(m.fecha);
-    if (!actual || actual.clave !== clave) {
-      actual = { clave, items: [] };
-      grupos.push(actual);
-    }
-    actual.items.push(m);
-  });
-  return grupos;
-}
+const TIPOS_GASTO = ["gasto_credito", "gasto_debito", "pago_tarjeta"];
 
 function fechaCumpleFiltro(fechaIso, filtro) {
   if (filtro === "todos") return true;
@@ -30,69 +17,186 @@ function fechaCumpleFiltro(fechaIso, filtro) {
   return fecha >= limite;
 }
 
+function agruparPorDia(movimientos) {
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const ayer = new Date(hoy);
+  ayer.setDate(ayer.getDate() - 1);
+
+  const grupos = [];
+  let actual = null;
+  movimientos.forEach((m) => {
+    const fecha = new Date(m.fecha);
+    const soloFecha = new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
+    let etiqueta;
+    if (soloFecha.getTime() === hoy.getTime()) etiqueta = `Hoy, ${fmtDiaCorto(m.fecha)}`;
+    else if (soloFecha.getTime() === ayer.getTime()) etiqueta = `Ayer, ${fmtDiaCorto(m.fecha)}`;
+    else etiqueta = fmtDiaLargo(m.fecha);
+
+    if (!actual || actual.etiqueta !== etiqueta) {
+      actual = { etiqueta, items: [] };
+      grupos.push(actual);
+    }
+    actual.items.push(m);
+  });
+  return grupos;
+}
+
 export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete }) {
-  const [tipoFiltro, setTipoFiltro] = useState("todos");
+  const [busqueda, setBusqueda] = useState("");
   const [targetFiltro, setTargetFiltro] = useState("todos");
+  const [tipoFiltro, setTipoFiltro] = useState("todos");
   const [fechaFiltro, setFechaFiltro] = useState("todos");
 
-  const targetTipo = tipoFiltro === "todos" ? null : ACCIONES[tipoFiltro].targetTipo;
-  const targetOptions = [
-    ...(targetTipo === "tarjeta" ? [] : cuentas.map((c) => ({ value: c.id, label: c.nombre }))),
-    ...(targetTipo === "cuenta" ? [] : tarjetas.map((t) => ({ value: t.id, label: t.banco ? `${t.nombre} · ${t.banco}` : t.nombre }))),
+  const ahora = new Date();
+  const movimientosMes = movimientos.filter((m) => {
+    const f = new Date(m.fecha);
+    return f.getFullYear() === ahora.getFullYear() && f.getMonth() === ahora.getMonth();
+  });
+  const totalIngresos = movimientosMes
+    .filter((m) => m.tipo_accion === "ingreso_cuenta")
+    .reduce((s, m) => s + Number(m.monto), 0);
+  const totalGastos = movimientosMes
+    .filter((m) => TIPOS_GASTO.includes(m.tipo_accion))
+    .reduce((s, m) => s + Number(m.monto), 0);
+  const balanceMes = totalIngresos - totalGastos;
+
+  const targets = [
+    ...cuentas.map((c) => ({ value: c.id, label: c.nombre })),
+    ...tarjetas.map((t) => ({ value: t.id, label: t.banco ? `${t.nombre} · ${t.banco}` : t.nombre })),
   ];
 
-  const handleTipoChange = (nuevoTipo) => {
-    setTipoFiltro(nuevoTipo);
-    setTargetFiltro("todos");
-  };
+  const toggleTipo = (valor) => setTipoFiltro((actual) => (actual === valor ? "todos" : valor));
 
   const movimientosFiltrados = movimientos.filter((m) => {
-    if (tipoFiltro !== "todos" && m.tipo_accion !== tipoFiltro) return false;
     if (targetFiltro !== "todos" && m.target_id !== targetFiltro && m.origen_cuenta_id !== targetFiltro) return false;
+    if (tipoFiltro === "gastos" && !TIPOS_GASTO.includes(m.tipo_accion)) return false;
+    if (tipoFiltro === "ingresos" && m.tipo_accion !== "ingreso_cuenta") return false;
     if (!fechaCumpleFiltro(m.fecha, fechaFiltro)) return false;
+    if (busqueda.trim()) {
+      const texto = busqueda.trim().toLowerCase();
+      const campos = [m.nota, m.target_nombre, m.categoria?.nombre].filter(Boolean).join(" ").toLowerCase();
+      if (!campos.includes(texto)) return false;
+    }
     return true;
   });
 
-  const gruposPorMes = agruparPorMes(movimientosFiltrados);
+  const grupos = agruparPorDia(movimientosFiltrados);
 
   return (
-    <div style={{ paddingTop: 16 }}>
-      <div className="historial-filters">
-        <div className="select-wrapper">
-          <select
-            className="target-select"
-            data-testid="historial-filtro-tipo"
-            value={tipoFiltro}
-            onChange={(e) => handleTipoChange(e.target.value)}
-          >
-            <option value="todos">Todos los movimientos</option>
-            {Object.entries(ACCIONES).map(([tipo, meta]) => (
-              <option key={tipo} value={tipo}>{meta.label}</option>
-            ))}
-          </select>
-          <ChevronDown size={16} className="select-chevron" />
-        </div>
+    <div className="historial-nuevo-root">
+      <style>{`
+        .historial-nuevo-root {
+          --bg: #F7F9FB; --surface: #FFFFFF; --surface-hi: #E0E3E5; --surface-low: #F2F4F6;
+          --primary: #000000; --on-primary: #FFFFFF;
+          --secondary-container: #D5E3FD; --on-secondary-container: #57657B;
+          --primary-fixed: #DAE2FD; --primary-container: #131B2E;
+          --on-surface: #1A1C1E; --on-surface-variant: #44474E;
+          --outline: #76777D; --outline-variant: #C6C6CD;
+          --income: #1B5E20; --expense: #BA1A1A;
+          font-family: Inter, sans-serif; color: var(--on-surface); padding: 16px;
+        }
+        .historial-buscar { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; }
+        .historial-buscar input { flex: 1; border: none; background: transparent; font-family: Inter, sans-serif; font-size: 16px; color: var(--on-surface); outline: none; }
+        .historial-buscar input::placeholder { color: var(--outline); }
 
-        <div className="select-wrapper">
-          <select
-            className="target-select"
-            data-testid="historial-filtro-target"
-            value={targetFiltro}
-            onChange={(e) => setTargetFiltro(e.target.value)}
-          >
-            <option value="todos">
-              {targetTipo === "tarjeta" ? "Todas las tarjetas" : targetTipo === "cuenta" ? "Todas las cuentas" : "Todas las cuentas y tarjetas"}
-            </option>
-            {targetOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <ChevronDown size={16} className="select-chevron" />
-        </div>
+        .historial-balance { background: var(--surface); border: 1px solid var(--surface-low); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(13,28,47,0.04); display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+        .historial-balance-label { font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin: 0 0 4px; }
+        .historial-balance-valor { font-size: 32px; font-weight: 700; letter-spacing: -0.01em; margin: 0; color: var(--primary); }
+        .historial-balance-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+        .historial-balance-pill { background: var(--secondary-container); color: var(--on-secondary-container); font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 9999px; }
+        .historial-balance-flujos { display: flex; gap: 10px; }
+        .historial-balance-flujo { display: flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; }
+        .historial-balance-flujo.in { color: var(--income); }
+        .historial-balance-flujo.out { color: var(--expense); }
 
-        <div className="select-wrapper">
+        .historial-chips-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 8px; scrollbar-width: none; }
+        .historial-chips-row::-webkit-scrollbar { display: none; }
+        .historial-chip { flex-shrink: 0; white-space: nowrap; padding: 8px 16px; border-radius: 9999px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 500; border: none; cursor: pointer; background: var(--surface-hi); color: var(--on-surface-variant); }
+        .historial-chip.active { background: var(--primary); color: var(--on-primary); }
+
+        .historial-row2 { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
+        .historial-row2-chips { display: flex; gap: 8px; overflow-x: auto; flex: 1; scrollbar-width: none; }
+        .historial-row2-chips::-webkit-scrollbar { display: none; }
+        .historial-fecha-select-wrap { position: relative; flex-shrink: 0; }
+        .historial-fecha-select {
+          appearance: none; display: flex; align-items: center; gap: 6px;
+          padding: 8px 30px 8px 34px; border: 1px solid var(--outline-variant); border-radius: 10px;
+          background: var(--surface); color: var(--on-surface); font-family: Inter, sans-serif; font-size: 13px; font-weight: 500;
+        }
+        .historial-fecha-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--on-surface-variant); pointer-events: none; }
+
+        .historial-dia-titulo { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--outline); margin: 0 4px 8px; }
+        .historial-dia-grupo { margin-bottom: 20px; }
+
+        .historial-empty { color: var(--on-surface-variant); font-size: 14px; text-align: center; padding: 40px 16px; }
+      `}</style>
+
+      <div className="historial-buscar">
+        <Search size={18} color="var(--outline)" />
+        <input
+          placeholder="Buscar movimientos..."
+          data-testid="historial-busqueda-input"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+        />
+      </div>
+
+      <div className="historial-balance">
+        <div>
+          <p className="historial-balance-label">Balance total este mes</p>
+          <p className="historial-balance-valor mono">{fmt(balanceMes)}</p>
+        </div>
+        <div className="historial-balance-right">
+          <span className="historial-balance-pill">{fmtMesAno(ahora.toISOString())}</span>
+          <div className="historial-balance-flujos">
+            <span className="historial-balance-flujo in"><ArrowUp size={13} />{fmt(totalIngresos)}</span>
+            <span className="historial-balance-flujo out"><ArrowDown size={13} />{fmt(totalGastos)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="historial-chips-row">
+        <button
+          className={`historial-chip ${targetFiltro === "todos" ? "active" : ""}`}
+          data-testid="historial-chip-target-todos"
+          onClick={() => setTargetFiltro("todos")}
+        >
+          Todas las cuentas
+        </button>
+        {targets.map((t) => (
+          <button
+            key={t.value}
+            className={`historial-chip ${targetFiltro === t.value ? "active" : ""}`}
+            data-testid={`historial-chip-target-${t.value}`}
+            onClick={() => setTargetFiltro(t.value)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="historial-row2">
+        <div className="historial-row2-chips">
+          <button
+            className={`historial-chip ${tipoFiltro === "gastos" ? "active" : ""}`}
+            data-testid="historial-chip-tipo-gastos"
+            onClick={() => toggleTipo("gastos")}
+          >
+            Gastos
+          </button>
+          <button
+            className={`historial-chip ${tipoFiltro === "ingresos" ? "active" : ""}`}
+            data-testid="historial-chip-tipo-ingresos"
+            onClick={() => toggleTipo("ingresos")}
+          >
+            Ingresos
+          </button>
+        </div>
+        <div className="historial-fecha-select-wrap">
+          <Calendar size={14} className="historial-fecha-icon" />
           <select
-            className="target-select"
+            className="historial-fecha-select"
             data-testid="historial-filtro-fecha"
             value={fechaFiltro}
             onChange={(e) => setFechaFiltro(e.target.value)}
@@ -102,31 +206,24 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
             <option value="3_meses">Últimos 3 meses</option>
             <option value="6_meses">Últimos 6 meses</option>
           </select>
-          <ChevronDown size={16} className="select-chevron" />
         </div>
       </div>
 
       {movimientos.length === 0 ? (
-        <div style={{ color: "var(--ink-soft)", fontSize: 14, padding: "20px 16px" }}>
-          No hay movimientos todavía.
-        </div>
+        <div className="historial-empty">No hay movimientos todavía.</div>
       ) : movimientosFiltrados.length === 0 ? (
-        <div style={{ color: "var(--ink-soft)", fontSize: 14, padding: "20px 16px" }}>
-          No hay movimientos que coincidan con estos filtros.
-        </div>
+        <div className="historial-empty">No hay movimientos que coincidan con estos filtros.</div>
       ) : (
-        gruposPorMes.map((grupo) => (
-          <div key={grupo.clave}>
-            <div className="section-title" data-testid={`historial-mes-${grupo.clave}`} style={{ margin: "8px 16px" }}>
-              {grupo.clave}
-            </div>
-            <div className="mov-list" data-testid="historial-mov-list">
+        <div data-testid="historial-mov-list">
+          {grupos.map((grupo) => (
+            <div className="historial-dia-grupo" key={grupo.etiqueta}>
+              <h3 className="historial-dia-titulo" data-testid={`historial-dia-${grupo.etiqueta}`}>{grupo.etiqueta}</h3>
               {grupo.items.map((m) => (
-                <MovimientoRow key={m.id} movimiento={m} onDelete={onDelete} />
+                <MovimientoCard key={m.id} movimiento={m} onDelete={onDelete} />
               ))}
             </div>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   );

@@ -48,7 +48,7 @@ describe("TarjetaDetalleView", () => {
     const tarjeta = { id: "t1", nombre: "Oro", dia_corte: 15, dia_pago: 5 };
     render(<TarjetaDetalleView tarjeta={tarjeta} onBack={vi.fn()} />);
     expect(screen.getByText("Laptop")).toBeInTheDocument();
-    expect(screen.getByText("Mes 3 de 12")).toBeInTheDocument();
+    expect(screen.getByText("2 / 12 meses transcurridos")).toBeInTheDocument();
   });
 
   it("calls onBack when the back button is clicked", () => {
@@ -83,10 +83,9 @@ describe("TarjetaDetalleView", () => {
     render(<TarjetaDetalleView tarjeta={tarjeta} onBack={vi.fn()} onRegistrada={onRegistrada} />);
 
     fireEvent.click(screen.getByTestId("msi-add-link"));
-    fireEvent.change(screen.getByTestId("msi-descripcion-input"), { target: { value: "Laptop" } });
-    fireEvent.change(screen.getByTestId("msi-monto-input"), { target: { value: "12000" } });
-    fireEvent.change(screen.getByTestId("msi-meses-input"), { target: { value: "12" } });
-    fireEvent.click(screen.getByTestId("msi-guardar-button"));
+    fireEvent.change(screen.getByTestId("nueva-compra-msi-descripcion-input"), { target: { value: "Laptop" } });
+    fireEvent.change(screen.getByTestId("nueva-compra-msi-monto-input"), { target: { value: "12000" } });
+    fireEvent.click(screen.getByTestId("nueva-compra-msi-guardar-button"));
 
     await waitFor(() => expect(onRegistrada).toHaveBeenCalled());
     expect(registrarCompra).toHaveBeenCalledWith({
@@ -115,17 +114,17 @@ describe("TarjetaDetalleView", () => {
     );
 
     fireEvent.click(screen.getByTestId("msi-add-link"));
-    fireEvent.change(screen.getByTestId("msi-categoria-select"), { target: { value: "__nueva__" } });
-    fireEvent.change(screen.getByTestId("msi-categoria-nueva-input"), { target: { value: "Tecnología" } });
-    fireEvent.click(screen.getByTestId("msi-categoria-crear-button"));
+    fireEvent.click(screen.getByTestId("nueva-compra-msi-categoria-abrir-button"));
+    fireEvent.click(screen.getByTestId("categoria-picker-crear-nueva"));
+    fireEvent.change(screen.getByTestId("nuevo-mov-categoria-nueva-input"), { target: { value: "Tecnología" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-categoria-crear-button"));
 
-    expect(crearCategoria).toHaveBeenCalledWith("Tecnología");
+    expect(crearCategoria).toHaveBeenCalledWith("Tecnología", { icono: "home", color: "#131B2E" });
 
-    await screen.findByTestId("msi-categoria-select");
-    fireEvent.change(screen.getByTestId("msi-descripcion-input"), { target: { value: "Laptop" } });
-    fireEvent.change(screen.getByTestId("msi-monto-input"), { target: { value: "12000" } });
-    fireEvent.change(screen.getByTestId("msi-meses-input"), { target: { value: "12" } });
-    fireEvent.click(screen.getByTestId("msi-guardar-button"));
+    await screen.findByTestId("nueva-compra-msi-categoria-abrir-button");
+    fireEvent.change(screen.getByTestId("nueva-compra-msi-descripcion-input"), { target: { value: "Laptop" } });
+    fireEvent.change(screen.getByTestId("nueva-compra-msi-monto-input"), { target: { value: "12000" } });
+    fireEvent.click(screen.getByTestId("nueva-compra-msi-guardar-button"));
 
     expect(registrarCompra).toHaveBeenCalledWith({
       tarjetaId: "t1",

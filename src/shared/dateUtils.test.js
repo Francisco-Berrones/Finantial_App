@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { diasHasta, formatDiasFaltantes } from "./dateUtils";
+import { diasHasta, formatDiasFaltantes, fechaUltimoCorte, fechaPagoDeCorte } from "./dateUtils";
 
 describe("diasHasta", () => {
   afterEach(() => {
@@ -40,6 +40,36 @@ describe("diasHasta", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 0, 31));
     expect(diasHasta(31)).toBe(0); // today already is the clamped 31st of january
+  });
+});
+
+describe("fechaUltimoCorte / fechaPagoDeCorte", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("finds the most recent past corte, not the next future one", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 7)); // July 7
+    const ultimo = fechaUltimoCorte(25); // día 25 -> most recent was June 25
+    expect(ultimo.getMonth()).toBe(5);
+    expect(ultimo.getDate()).toBe(25);
+  });
+
+  it("places the pago in the month after the corte when the pago día is numerically smaller", () => {
+    // Corte día 25, pago día 15 -> pago belongs to the month AFTER the corte.
+    const corte = new Date(2026, 5, 25); // June 25
+    const pago = fechaPagoDeCorte(corte, 15);
+    expect(pago.getMonth()).toBe(6); // July
+    expect(pago.getDate()).toBe(15);
+  });
+
+  it("keeps the pago in the same month as the corte when the pago día is larger", () => {
+    // Corte día 10, pago día 30 -> same month.
+    const corte = new Date(2026, 5, 10); // June 10
+    const pago = fechaPagoDeCorte(corte, 30);
+    expect(pago.getMonth()).toBe(5);
+    expect(pago.getDate()).toBe(30);
   });
 });
 

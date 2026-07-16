@@ -1,4 +1,5 @@
-import { render, screen, fireEvent } from "@testing-library/react";
+import { createRef } from "react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import TarjetasManager from "./TarjetasManager";
 
@@ -22,8 +23,10 @@ describe("TarjetasManager", () => {
 
   it("submits a new tarjeta with the form values", () => {
     const addTarjeta = vi.fn().mockResolvedValue(true);
+    const ref = createRef();
     render(
       <TarjetasManager
+        ref={ref}
         tarjetas={tarjetas}
         session={session}
         addTarjeta={addTarjeta}
@@ -32,9 +35,9 @@ describe("TarjetasManager", () => {
         onVerTarjeta={vi.fn()}
       />
     );
-    fireEvent.click(screen.getByTestId("tarjetas-add-link"));
-    fireEvent.change(screen.getByTestId("tarjetas-nombre-input"), { target: { value: "Platino" } });
-    fireEvent.click(screen.getByTestId("tarjetas-save-button"));
+    act(() => ref.current.abrirFormulario());
+    fireEvent.change(screen.getByTestId("nueva-tarjeta-nombre-input"), { target: { value: "Platino" } });
+    fireEvent.click(screen.getByTestId("nueva-tarjeta-guardar-button"));
     expect(addTarjeta).toHaveBeenCalledWith({
       nombre: "Platino",
       banco: "",
@@ -42,14 +45,17 @@ describe("TarjetasManager", () => {
       saldoUsado: "",
       diaCorte: "",
       diaPago: "",
+      color: "#131b2e",
       userId: "user-1",
     });
   });
 
-  it("submits a new tarjeta with dia_corte/dia_pago", () => {
+  it("submits a new tarjeta with dia_corte/dia_pago and a custom color", () => {
     const addTarjeta = vi.fn().mockResolvedValue(true);
+    const ref = createRef();
     render(
       <TarjetasManager
+        ref={ref}
         tarjetas={tarjetas}
         session={session}
         addTarjeta={addTarjeta}
@@ -58,11 +64,12 @@ describe("TarjetasManager", () => {
         onVerTarjeta={vi.fn()}
       />
     );
-    fireEvent.click(screen.getByTestId("tarjetas-add-link"));
-    fireEvent.change(screen.getByTestId("tarjetas-nombre-input"), { target: { value: "Platino" } });
-    fireEvent.change(screen.getByTestId("tarjetas-dia-corte-input"), { target: { value: "15" } });
-    fireEvent.change(screen.getByTestId("tarjetas-dia-pago-input"), { target: { value: "5" } });
-    fireEvent.click(screen.getByTestId("tarjetas-save-button"));
+    act(() => ref.current.abrirFormulario());
+    fireEvent.change(screen.getByTestId("nueva-tarjeta-nombre-input"), { target: { value: "Platino" } });
+    fireEvent.change(screen.getByTestId("nueva-tarjeta-dia-corte-select"), { target: { value: "15" } });
+    fireEvent.change(screen.getByTestId("nueva-tarjeta-dia-pago-select"), { target: { value: "5" } });
+    fireEvent.click(screen.getByTestId("nueva-tarjeta-color-1e40af"));
+    fireEvent.click(screen.getByTestId("nueva-tarjeta-guardar-button"));
     expect(addTarjeta).toHaveBeenCalledWith({
       nombre: "Platino",
       banco: "",
@@ -70,6 +77,7 @@ describe("TarjetasManager", () => {
       saldoUsado: "",
       diaCorte: "15",
       diaPago: "5",
+      color: "#1e40af",
       userId: "user-1",
     });
   });

@@ -13,3 +13,18 @@ export const fmtMesAno = (iso) => {
   const texto = d.toLocaleDateString("es-MX", { month: "long", year: "numeric" });
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 };
+
+export const fmtHoraCorta = (iso) =>
+  new Date(iso).toLocaleTimeString("es-MX", { hour: "numeric", minute: "2-digit", hour12: true });
+
+export const fmtDiaCorto = (iso) => {
+  const d = new Date(iso);
+  const mes = d.toLocaleDateString("es-MX", { month: "short" }).replace(".", "");
+  return `${d.getDate()} ${mes.charAt(0).toUpperCase() + mes.slice(1)}`;
+};
+
+export const fmtDiaLargo = (iso) => {
+  const d = new Date(iso);
+  const mes = d.toLocaleDateString("es-MX", { month: "long" });
+  return `${d.getDate()} ${mes.charAt(0).toUpperCase() + mes.slice(1)}`;
+};

@@ -1,30 +1,19 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Plus } from "lucide-react";
+import { forwardRef, useImperativeHandle, useState } from "react";
+import { CreditCard } from "lucide-react";
 import TarjetaRow from "./TarjetaRow";
+import NuevaTarjetaModal from "./NuevaTarjetaModal";
 
-export default function TarjetasManager({ tarjetas, session, addTarjeta, deleteTarjeta, onChange, onVerTarjeta }) {
-  const [nombre, setNombre] = useState("");
-  const [banco, setBanco] = useState("");
-  const [lineaTotal, setLineaTotal] = useState("");
-  const [saldoUsado, setSaldoUsado] = useState("");
-  const [diaCorte, setDiaCorte] = useState("");
-  const [diaPago, setDiaPago] = useState("");
+const TarjetasManager = forwardRef(function TarjetasManager({ tarjetas, session, addTarjeta, deleteTarjeta, onChange, onVerTarjeta, onPagarTarjeta, movimientos = [], msiActivas = [] }, ref) {
   const [showAdd, setShowAdd] = useState(false);
 
-  const handleAdd = async () => {
-    if (!nombre.trim()) return;
-    const ok = await addTarjeta({ nombre, banco, lineaTotal, saldoUsado, diaCorte, diaPago, userId: session.user.id });
-    if (ok) {
-      setNombre("");
-      setBanco("");
-      setLineaTotal("");
-      setSaldoUsado("");
-      setDiaCorte("");
-      setDiaPago("");
-      setShowAdd(false);
-      await onChange();
-    }
+  useImperativeHandle(ref, () => ({
+    abrirFormulario: () => setShowAdd(true),
+  }));
+
+  const handleAdd = async ({ nombre, banco, lineaTotal, saldoUsado, diaCorte, diaPago, color }) => {
+    const ok = await addTarjeta({ nombre, banco, lineaTotal, saldoUsado, diaCorte, diaPago, color, userId: session.user.id });
+    if (ok) await onChange();
+    return ok;
   };
 
   const handleDelete = async (id) => {
@@ -33,88 +22,43 @@ export default function TarjetasManager({ tarjetas, session, addTarjeta, deleteT
   };
 
   return (
-    <>
-      <div className="section-title" style={{ margin: "24px 0 4px" }}>Tarjetas de crédito</div>
-      <div className="tarjeta-list" style={{ padding: 0, marginBottom: 12 }}>
+    <div className="tarjetas-sec-root">
+      <style>{`
+        .tarjetas-sec-root {
+          --surface: #FFFFFF; --surface-low: #F2F4F6; --surface-hi: #E6E8EA;
+          --primary: #000000; --primary-container: #131B2E; --on-primary: #FFFFFF;
+          --on-surface: #1A1C1E; --on-surface-variant: #44474E; --on-secondary-container: #57657B;
+          --outline: #76777D; --outline-variant: #C6C6CD; --expense: #BA1A1A;
+          font-family: Inter, sans-serif; color: var(--on-surface); margin-top: 28px;
+        }
+        .tarjetas-sec-head { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .tarjetas-sec-head svg { color: var(--primary-container); }
+        .tarjetas-sec-titulo { font-size: 18px; font-weight: 600; color: var(--on-surface); }
+        .tarjetas-sec-list { display: flex; flex-direction: column; gap: 14px; }
+      `}</style>
+
+      <div className="tarjetas-sec-head">
+        <CreditCard size={20} />
+        <span className="tarjetas-sec-titulo">Tarjetas de Crédito</span>
+      </div>
+
+      <div className="tarjetas-sec-list">
         {tarjetas.map((t) => (
-          <TarjetaRow key={t.id} tarjeta={t} onDelete={handleDelete} onClick={() => onVerTarjeta(t.id)} />
+          <TarjetaRow
+            key={t.id}
+            tarjeta={t}
+            movimientos={movimientos}
+            msiActivas={msiActivas}
+            onDelete={handleDelete}
+            onClick={() => onVerTarjeta(t.id)}
+            onPagarAhora={onPagarTarjeta}
+          />
         ))}
       </div>
-      <AnimatePresence initial={false}>
-        {!showAdd ? (
-          <motion.button
-            key="add-link"
-            className="add-link"
-            data-testid="tarjetas-add-link"
-            onClick={() => setShowAdd(true)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-          >
-            <Plus size={13} /> agregar tarjeta
-          </motion.button>
-        ) : (
-          <motion.div
-            key="add-form"
-            className="form-box"
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            style={{ overflow: "hidden" }}
-          >
-            <input
-              placeholder="Nombre (ej. Oro)"
-              data-testid="tarjetas-nombre-input"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-            />
-            <input
-              placeholder="Banco (ej. Banorte)"
-              data-testid="tarjetas-banco-input"
-              value={banco}
-              onChange={(e) => setBanco(e.target.value)}
-            />
-            <input
-              placeholder="Línea de crédito total"
-              inputMode="decimal"
-              data-testid="tarjetas-linea-input"
-              value={lineaTotal}
-              onChange={(e) => setLineaTotal(e.target.value)}
-            />
-            <input
-              placeholder="Saldo ya usado (opcional)"
-              inputMode="decimal"
-              data-testid="tarjetas-usado-input"
-              value={saldoUsado}
-              onChange={(e) => setSaldoUsado(e.target.value)}
-            />
-            <div style={{ display: "flex", gap: 8 }}>
-              <input
-                placeholder="Día de corte (1-31, opcional)"
-                inputMode="numeric"
-                style={{ flex: 1 }}
-                data-testid="tarjetas-dia-corte-input"
-                value={diaCorte}
-                onChange={(e) => setDiaCorte(e.target.value.replace(/[^0-9]/g, ""))}
-              />
-              <input
-                placeholder="Día de pago (1-31, opcional)"
-                inputMode="numeric"
-                style={{ flex: 1 }}
-                data-testid="tarjetas-dia-pago-input"
-                value={diaPago}
-                onChange={(e) => setDiaPago(e.target.value.replace(/[^0-9]/g, ""))}
-              />
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button className="btn dark" data-testid="tarjetas-save-button" onClick={handleAdd}>Guardar</button>
-              <button className="btn" data-testid="tarjetas-cancel-button" onClick={() => setShowAdd(false)}>Cancelar</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+
+      {showAdd && <NuevaTarjetaModal onGuardar={handleAdd} onClose={() => setShowAdd(false)} />}
+    </div>
   );
-}
+});
+
+export default TarjetasManager;

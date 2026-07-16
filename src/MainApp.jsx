@@ -7,11 +7,12 @@ import { useTarjetas } from "./features/tarjetas/useTarjetas";
 import { useMovimientos } from "./features/movimientos/useMovimientos";
 import { useCategorias } from "./features/categorias/useCategorias";
 import { useSuscripciones } from "./features/suscripciones/useSuscripciones";
+import { useMsiActivas } from "./features/tarjetas/useMsiActivas";
 import InicioView from "./pages/InicioView";
 import HistorialView from "./features/movimientos/HistorialView";
-import CuentasManager from "./features/cuentas/CuentasManager";
-import TarjetasManager from "./features/tarjetas/TarjetasManager";
-import SuscripcionesManager from "./features/suscripciones/SuscripcionesManager";
+import CuentasView from "./pages/CuentasView";
+import NuevaCuentaView from "./pages/NuevaCuentaView";
+import SuscripcionesView from "./pages/SuscripcionesView";
 import SuscripcionesPendientesModal from "./features/suscripciones/SuscripcionesPendientesModal";
 import NuevoMovimientoView from "./features/movimientos/NuevoMovimientoView";
 import TarjetaDetalleView from "./features/tarjetas/TarjetaDetalleView";
@@ -25,22 +26,24 @@ export default function MainApp({ session }) {
   const { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento, commitPagoTarjeta } = useMovimientos();
   const { categorias, fetchCategorias, addCategoria } = useCategorias();
   const { suscripciones, fetchSuscripciones, addSuscripcion, deleteSuscripcion, confirmarCobro } = useSuscripciones();
+  const { msiActivas, fetchMsiActivas } = useMsiActivas();
 
   const [view, setView] = useState("inicio");
   const [cargando, setCargando] = useState(true);
   const [detalleTarjetaId, setDetalleTarjetaId] = useState(null);
   const [viewAntesDetalle, setViewAntesDetalle] = useState("inicio");
   const [mostrarPendientes, setMostrarPendientes] = useState(false);
+  const [presetPagoTarjetaId, setPresetPagoTarjetaId] = useState(null);
 
   const pendientesSuscripciones = suscripciones.filter((s) => s.pendiente_confirmar);
 
   const fetchAll = useCallback(async () => {
-    await Promise.all([fetchCuentas(), fetchTarjetas(), fetchMovimientos(), fetchCategorias(), fetchSuscripciones()]);
+    await Promise.all([fetchCuentas(), fetchTarjetas(), fetchMovimientos(), fetchCategorias(), fetchSuscripciones(), fetchMsiActivas()]);
     setCargando(false);
-  }, [fetchCuentas, fetchTarjetas, fetchMovimientos, fetchCategorias, fetchSuscripciones]);
+  }, [fetchCuentas, fetchTarjetas, fetchMovimientos, fetchCategorias, fetchSuscripciones, fetchMsiActivas]);
 
-  const crearCategoria = async (nombre) => {
-    const creada = await addCategoria({ nombre, userId: session.user.id });
+  const crearCategoria = async (nombre, { icono, color } = {}) => {
+    const creada = await addCategoria({ nombre, userId: session.user.id, icono, color });
     if (creada) await fetchCategorias();
     return creada;
   };
@@ -63,6 +66,11 @@ export default function MainApp({ session }) {
     setView("tarjetaDetalle");
   };
 
+  const abrirPagoTarjeta = (tarjetaId) => {
+    setPresetPagoTarjetaId(tarjetaId);
+    setView("nuevoMovimiento");
+  };
+
   const screenVariants = {
     initial: { opacity: 0, x: 24 },
     animate: { opacity: 1, x: 0 },
@@ -83,18 +91,19 @@ export default function MainApp({ session }) {
           --ink: #2B2A26; --ink-soft: #7A7365;
           --credito: #A8412B; --credito-soft: #E7CFC6;
           --ahorro: #2E6B52; --ahorro-soft: #D2E3D6;
+          --bg: #F7F9FB; --surface: #FFFFFF; --on-surface: #1A1C1E; --on-surface-variant: #44474E; --outline-variant: #C6C6CD; --primary: #000000;
           font-family: Figtree;
-          color: var(--ink); background: var(--paper);
+          color: var(--ink); background: var(--bg);
           min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative;
           box-sizing: border-box;
           overflow-x: hidden;
         }
         .app-root * { box-sizing: border-box; }
         .mono { font-family: Figtree; font-variant-numeric: tabular-nums; }
-        .header { padding: 22px 20px 14px; border-bottom: 1px solid var(--paper-line); display: flex; justify-content: space-between; align-items: flex-start; }
-        .header-eyebrow { font-family: Figtree; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); margin: 0 0 4px; }
-        .header-title { font-size: 26px; margin: 0; font-weight: normal; }
-        .logout-btn { background: none; border: none; color: var(--ink-soft); cursor: pointer; margin-top: 4px; }
+        .header { background: var(--bg); padding: 20px 20px 14px; display: flex; justify-content: space-between; align-items: flex-start; font-family: Inter, sans-serif; }
+        .header-eyebrow { font-family: Inter, sans-serif; font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin: 0 0 4px; }
+        .header-title { font-size: 24px; margin: 0; font-weight: 700; color: var(--on-surface); }
+        .logout-btn { background: none; border: none; color: var(--on-surface-variant); cursor: pointer; margin-top: 4px; }
         .summary-row { display: flex; gap: 10px; padding: 16px 16px 4px; }
         .summary-box { flex: 1; background: var(--paper-card); border-radius: 4px; padding: 12px 14px; border-top: 3px solid var(--ahorro); }
         .summary-box.credito { border-top-color: var(--credito); }
@@ -159,10 +168,14 @@ export default function MainApp({ session }) {
         .mov-amount.credito { color: var(--credito); }
         .mov-amount.ahorro { color: var(--ahorro); }
         .mov-del { background: none; border: none; color: var(--ink-soft); padding: 4px; cursor: pointer; }
-        .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; background: var(--paper-card); border-top: 1px solid var(--paper-line); display: flex; align-items: center; justify-content: space-around; padding: 8px 10px calc(8px + env(safe-area-inset-bottom)); }
-        .tab-btn { background: none; border: none; color: var(--ink-soft); display: flex; flex-direction: column; align-items: center; gap: 2px; font-family: Figtree; font-size: 10px; cursor: pointer; padding: 4px 8px; }
-        .tab-btn.active { color: var(--ink); }
-        .fab { width: 52px; height: 52px; border-radius: 50%; background: var(--ink); color: var(--paper-card); display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; margin-top: -26px; box-shadow: 0 4px 10px rgba(0,0,0,0.25); }
+        .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 80px; box-sizing: border-box; background: var(--surface); box-shadow: 0 -4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-around; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+        .tab-btn { background: none; border: none; color: var(--on-surface-variant); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: Inter, sans-serif; font-size: 10px; font-weight: 500; cursor: pointer; padding: 8px; border-radius: 12px; transition: background-color 0.15s ease, transform 0.15s ease; }
+        .tab-btn:active { background: var(--bg); transform: scale(0.9); }
+        .tab-btn.active { color: var(--primary); font-weight: 700; }
+        .fab-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .fab { width: 48px; height: 48px; border-radius: 9999px; background: var(--primary); color: #fff; display: flex; align-items: center; justify-content: center; border: 4px solid var(--surface); cursor: pointer; margin-top: -32px; box-shadow: 0 4px 10px rgba(0,0,0,0.25); transition: transform 0.15s ease; }
+        .fab:active { transform: scale(0.9); }
+        .fab-label { font-family: Inter, sans-serif; font-size: 10px; font-weight: 500; color: var(--on-surface-variant); }
         .action-btn { width: 100%; text-align: left; display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: 6px; border: 1px solid var(--paper-line); background: var(--paper); margin-bottom: 8px; cursor: pointer; font-family: Figtree; font-size: 15px; color: var(--ink); }
         .action-btn .ico { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--credito-soft); color: var(--credito); flex-shrink: 0; }
         .action-btn .ico.ahorro { background: var(--ahorro-soft); color: var(--ahorro); }
@@ -206,14 +219,17 @@ export default function MainApp({ session }) {
       {view === "nuevoMovimiento" ? (
         <motion.div key="nuevoMovimiento" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <NuevoMovimientoView
+          key={presetPagoTarjetaId || "default"}
           cuentas={cuentas}
           tarjetas={tarjetas}
           categorias={categorias}
           crearCategoria={crearCategoria}
           commitMovimiento={commitMovimiento}
           commitPagoTarjeta={commitPagoTarjeta}
-          onBack={() => setView("inicio")}
+          presetTarjetaId={presetPagoTarjetaId}
+          onBack={() => { setPresetPagoTarjetaId(null); setView("inicio"); }}
           onSaved={async () => {
+            setPresetPagoTarjetaId(null);
             await fetchAll();
             setView("inicio");
           }}
@@ -231,11 +247,35 @@ export default function MainApp({ session }) {
         <motion.div key="ajustes" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <AjustesView session={session} onBack={() => setView("inicio")} />
         </motion.div>
+      ) : view === "nuevaCuenta" ? (
+        <motion.div key="nuevaCuenta" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
+        <NuevaCuentaView
+          session={session}
+          addCuenta={addCuenta}
+          onChange={fetchAll}
+          onBack={() => setView("cuentas")}
+        />
+        </motion.div>
+      ) : view === "suscripciones" ? (
+        <motion.div key="suscripciones" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
+        <SuscripcionesView
+          suscripciones={suscripciones}
+          cuentas={cuentas}
+          tarjetas={tarjetas}
+          categorias={categorias}
+          session={session}
+          addSuscripcion={addSuscripcion}
+          deleteSuscripcion={deleteSuscripcion}
+          onChange={fetchAll}
+          onBack={() => setView("cuentas")}
+        />
+        </motion.div>
       ) : view === "tarjetaDetalle" ? (
         <motion.div key="tarjetaDetalle" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <TarjetaDetalleView
           tarjeta={tarjetas.find((t) => t.id === detalleTarjetaId)}
           categorias={categorias}
+          movimientos={movimientos}
           crearCategoria={crearCategoria}
           onBack={() => setView(viewAntesDetalle)}
           onGuardarCortePago={async (id, datos) => {
@@ -244,10 +284,12 @@ export default function MainApp({ session }) {
             return ok;
           }}
           onRegistrada={fetchAll}
+          onVerHistorial={() => setView("historial")}
+          onVerAnalisis={() => setView("resumen")}
         />
         </motion.div>
       ) : (
-        <motion.div key="main" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }} style={{ paddingBottom: 84 }}>
+        <motion.div key="main" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }} style={{ paddingBottom: 96 }}>
           <div className="header">
             <div>
               <p className="header-eyebrow" style={{ marginTop: 20 }}>
@@ -272,9 +314,12 @@ export default function MainApp({ session }) {
                     cuentas={cuentas}
                     tarjetas={tarjetas}
                     movimientos={movimientos}
+                    msiActivas={msiActivas}
                     onNavigateCuentas={() => setView("cuentas")}
                     onVerTarjeta={abrirDetalleTarjeta}
                     onAbrirResumen={() => setView("resumen")}
+                    onAbrirHistorial={() => setView("historial")}
+                    onPagarTarjeta={abrirPagoTarjeta}
                   />
                 </motion.div>
               )}
@@ -295,33 +340,22 @@ export default function MainApp({ session }) {
 
               {view === "cuentas" && (
                 <motion.div key="tab-cuentas" variants={tabVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.18 }}>
-                  <div className="manage-block">
-                    <CuentasManager
-                      cuentas={cuentas}
-                      session={session}
-                      addCuenta={addCuenta}
-                      deleteCuenta={deleteCuenta}
-                      onChange={fetchAll}
-                    />
-                    <TarjetasManager
-                      tarjetas={tarjetas}
-                      session={session}
-                      addTarjeta={addTarjeta}
-                      deleteTarjeta={deleteTarjeta}
-                      onChange={fetchAll}
-                      onVerTarjeta={abrirDetalleTarjeta}
-                    />
-                    <SuscripcionesManager
-                      suscripciones={suscripciones}
-                      cuentas={cuentas}
-                      tarjetas={tarjetas}
-                      categorias={categorias}
-                      session={session}
-                      addSuscripcion={addSuscripcion}
-                      deleteSuscripcion={deleteSuscripcion}
-                      onChange={fetchAll}
-                    />
-                  </div>
+                  <CuentasView
+                    cuentas={cuentas}
+                    tarjetas={tarjetas}
+                    session={session}
+                    deleteCuenta={deleteCuenta}
+                    addTarjeta={addTarjeta}
+                    deleteTarjeta={deleteTarjeta}
+                    onChange={fetchAll}
+                    onVerTarjeta={abrirDetalleTarjeta}
+                    onPagarTarjeta={abrirPagoTarjeta}
+                    movimientos={movimientos}
+                    msiActivas={msiActivas}
+                    suscripciones={suscripciones}
+                    onAbrirSuscripciones={() => setView("suscripciones")}
+                    onAbrirNuevaCuenta={() => setView("nuevaCuenta")}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -334,9 +368,12 @@ export default function MainApp({ session }) {
             <button className={`tab-btn ${view === "historial" ? "active" : ""}`} data-testid="tabbar-historial-button" onClick={() => setView("historial")}>
               <Clock size={19} /> Historial
             </button>
-            <button className="fab" data-testid="tabbar-fab-button" onClick={() => setView("nuevoMovimiento")} aria-label="Registrar movimiento">
-              <Plus size={24} />
-            </button>
+            <div className="fab-wrap">
+              <button className="fab" data-testid="tabbar-fab-button" onClick={() => setView("nuevoMovimiento")} aria-label="Registrar movimiento">
+                <Plus size={22} />
+              </button>
+              <span className="fab-label">Nuevo</span>
+            </div>
             <button className={`tab-btn ${view === "cuentas" ? "active" : ""}`} data-testid="tabbar-cuentas-button" onClick={() => setView("cuentas")}>
               <Landmark size={19} /> Cuentas
             </button>
