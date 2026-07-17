@@ -10,7 +10,7 @@ const EMAIL_DESTINO = process.env.EMAIL_DESTINO;
 const EMAIL_ORIGEN = process.env.EMAIL_ORIGEN || "onboarding@resend.dev";
 
 export default async function handler(req, res) {
-  // Vercel manda este header automáticamente al disparar el cron,
+  // vercel manda este header automáticamente al disparar el cron,
   // usando el valor que le des a la variable CRON_SECRET. Así
   // confirmamos que quien llama es Vercel y no cualquiera que
   // adivine la URL.
