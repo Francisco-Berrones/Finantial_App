@@ -24,10 +24,21 @@ export default async function handler(req, res) {
   // filtramos todo a mano por USER_ID (auth.uid() no existe aquí).
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-  const hoy = new Date();
-  const inicioMesActual = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1); // el mes que acaba de cerrar
-  const finMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-  const inicioMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1);
+  // ?mes=YYYY-MM permite forzar el mes a analizar (solo para pruebas manuales);
+  // sin el parámetro, se usa el mes que acaba de cerrar, como hace el cron real.
+  const mesForzado = req.query?.mes;
+  let inicioMesActual, finMesActual, inicioMesAnterior;
+  if (mesForzado && /^\d{4}-\d{2}$/.test(mesForzado)) {
+    const [anio, mes] = mesForzado.split("-").map(Number);
+    inicioMesActual = new Date(anio, mes - 1, 1);
+    finMesActual = new Date(anio, mes, 1);
+    inicioMesAnterior = new Date(anio, mes - 2, 1);
+  } else {
+    const hoy = new Date();
+    inicioMesActual = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1); // el mes que acaba de cerrar
+    finMesActual = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    inicioMesAnterior = new Date(hoy.getFullYear(), hoy.getMonth() - 2, 1);
+  }
 
   const { data: movActual } = await supabase
     .from("movimientos")
