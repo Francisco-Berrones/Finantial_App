@@ -85,7 +85,7 @@ function TooltipGasto({ active, payload }) {
   );
 }
 
-export default function ResumenCategoriasView({ movimientos, onBack }) {
+export default function ResumenCategoriasView({ movimientos, oscuro, onBack }) {
   const [rango, setRango] = useState("mes");
   const [tipoChart, setTipoChart] = useState("barras");
 
@@ -246,10 +246,10 @@ export default function ResumenCategoriasView({ movimientos, onBack }) {
                         width={110}
                         tickLine={false}
                         axisLine={false}
-                        tick={{ fontSize: 12, fill: "#76777D", fontFamily: "Inter" }}
+                        tick={{ fontSize: 12, fill: oscuro ? "#C4C6D0" : "#76777D", fontFamily: "Inter" }}
                       />
-                      <Tooltip content={<TooltipGasto />} cursor={{ fill: "#F2F4F6" }} />
-                      <Bar dataKey="total" fill={COLOR_GASTO} radius={[0, 4, 4, 0]} barSize={22} />
+                      <Tooltip content={<TooltipGasto />} cursor={{ fill: oscuro ? "#262B30" : "#F2F4F6" }} />
+                      <Bar dataKey="total" fill={oscuro ? "#FFFFFF" : COLOR_GASTO} radius={[0, 4, 4, 0]} barSize={22} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>

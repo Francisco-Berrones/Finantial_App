@@ -101,7 +101,7 @@ export default function MainApp({ session }) {
           --bg: #F7F9FB; --surface: #FFFFFF; --on-surface: #1A1C1E; --on-surface-variant: #44474E; --outline-variant: #C6C6CD; --primary: #000000;
           font-family: Figtree;
           color: var(--ink); background: var(--bg);
-          min-height: 100vh; max-width: 480px; margin: 0 auto; position: relative;
+          min-height: 100vh; min-height: 100dvh; max-width: 480px; margin: 0 auto; position: relative;
           box-sizing: border-box;
           overflow-x: hidden;
           transition: background 0.2s ease, color 0.2s ease;
@@ -183,7 +183,7 @@ export default function MainApp({ session }) {
         .mov-amount.credito { color: var(--credito); }
         .mov-amount.ahorro { color: var(--ahorro); }
         .mov-del { background: none; border: none; color: var(--ink-soft); padding: 4px; cursor: pointer; }
-        .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 80px; box-sizing: border-box; background: var(--surface); box-shadow: 0 -4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-around; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); }
+        .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; height: 80px; box-sizing: border-box; background: var(--surface); box-shadow: 0 -4px 12px rgba(0,0,0,0.04); display: flex; align-items: center; justify-content: space-around; padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); z-index: 30; }
         .tab-btn { background: none; border: none; color: var(--on-surface-variant); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: Inter, sans-serif; font-size: 10px; font-weight: 500; cursor: pointer; padding: 8px; border-radius: 12px; transition: background-color 0.15s ease, transform 0.15s ease; }
         .tab-btn:active { background: var(--bg); transform: scale(0.9); }
         .tab-btn.active { color: var(--primary); font-weight: 700; }
@@ -256,7 +256,7 @@ export default function MainApp({ session }) {
         </motion.div>
       ) : view === "resumen" ? (
         <motion.div key="resumen" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
-        <ResumenCategoriasView movimientos={movimientos} onBack={() => setView("inicio")} />
+        <ResumenCategoriasView movimientos={movimientos} oscuro={oscuro} onBack={() => setView("inicio")} />
         </motion.div>
       ) : view == "ajustes" ? (
         <motion.div key="ajustes" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
