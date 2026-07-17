@@ -214,6 +214,15 @@ Deno.serve(async (req) => {
       .reduce((s, m) => s + Number(m.monto), 0);
   }
 
+  // Pagos que el usuario ya hizo a esta tarjeta desde una fecha dada -- se descuentan del
+  // monto a pagar, para que una tarjeta ya liquidada deje de aparecer como pendiente
+  // (mismo cálculo que src/shared/calcularPagoTarjeta.js en el frontend).
+  function pagosRealizadosDesde(tarjetaId: string, desde: Date): number {
+    return movimientosList
+      .filter((m) => m.tipo_accion === "pago_tarjeta" && m.target_id === tarjetaId && new Date(m.fecha) > desde)
+      .reduce((s, m) => s + Number(m.monto), 0);
+  }
+
   const resumenTarjetas =
     (tarjetas || [])
       .map((t) => {
@@ -238,10 +247,13 @@ Deno.serve(async (req) => {
           const inicioCicloCerrado = new Date(ultimoCorte);
           inicioCicloCerrado.setMonth(inicioCicloCerrado.getMonth() - 1);
           const gastoCicloCerrado = gastoNormalEnVentana(t.id, inicioCicloCerrado, ultimoCorte);
-          const totalAPagar = gastoCicloCerrado + mensualidadesMsi;
+          const pagosRealizados = pagosRealizadosDesde(t.id, ultimoCorte);
+          const totalAPagar = Math.max(0, gastoCicloCerrado + mensualidadesMsi - pagosRealizados);
           textoAPagar =
             `$${totalAPagar.toFixed(2)} (gasto normal del ciclo que cerró en tu corte del ${fmtFechaLarga(ultimoCorte)}: ` +
-            `$${gastoCicloCerrado.toFixed(2)} + mensualidades de compras a meses: $${mensualidadesMsi.toFixed(2)})`;
+            `$${gastoCicloCerrado.toFixed(2)} + mensualidades de compras a meses: $${mensualidadesMsi.toFixed(2)}` +
+            `${pagosRealizados > 0 ? ` - pagos ya realizados desde ese corte: $${pagosRealizados.toFixed(2)}` : ""})` +
+            `${totalAPagar === 0 ? " -- YA ESTÁ LIQUIDADA, no recomiendes pagarla de nuevo." : ""}`;
         }
 
         let textoAcumuladoCicloActual = "no se puede calcular (falta configurar el día de corte)";
