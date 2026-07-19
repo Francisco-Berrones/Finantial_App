@@ -42,11 +42,12 @@ function agruparPorDia(movimientos) {
   return grupos;
 }
 
-export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete }) {
+export default function HistorialView({ movimientos, cuentas, tarjetas, categorias = [], onDelete }) {
   const [busqueda, setBusqueda] = useState("");
   const [targetFiltro, setTargetFiltro] = useState("todos");
   const [tipoFiltro, setTipoFiltro] = useState("todos");
   const [fechaFiltro, setFechaFiltro] = useState("todos");
+  const [categoriaFiltro, setCategoriaFiltro] = useState("todos");
 
   const ahora = new Date();
   const movimientosMes = movimientos.filter((m) => {
@@ -72,6 +73,7 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
     if (targetFiltro !== "todos" && m.target_id !== targetFiltro && m.origen_cuenta_id !== targetFiltro) return false;
     if (tipoFiltro === "gastos" && !TIPOS_GASTO.includes(m.tipo_accion)) return false;
     if (tipoFiltro === "ingresos" && m.tipo_accion !== "ingreso_cuenta") return false;
+    if (categoriaFiltro !== "todos" && m.categoria_id !== categoriaFiltro) return false;
     if (!fechaCumpleFiltro(m.fecha, fechaFiltro)) return false;
     if (busqueda.trim()) {
       const texto = busqueda.trim().toLowerCase();
@@ -110,13 +112,14 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
         .historial-buscar input { flex: 1; border: none; background: transparent; font-family: Inter, sans-serif; font-size: 16px; color: var(--on-surface); outline: none; }
         .historial-buscar input::placeholder { color: var(--outline); }
 
-        .historial-balance { background: var(--surface); border: 1px solid var(--surface-low); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(13,28,47,0.04); display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+        .historial-balance { background: var(--surface); border: 1px solid var(--surface-low); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(13,28,47,0.04); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
+        .historial-balance-left { min-width: 0; flex: 1 1 auto; }
         .historial-balance-label { font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin: 0 0 4px; }
-        .historial-balance-valor { font-size: 32px; font-weight: 700; letter-spacing: -0.01em; margin: 0; color: var(--primary); }
-        .historial-balance-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-        .historial-balance-pill { background: var(--secondary-container); color: var(--on-secondary-container); font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 9999px; }
-        .historial-balance-flujos { display: flex; gap: 10px; }
-        .historial-balance-flujo { display: flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; }
+        .historial-balance-valor { font-size: clamp(22px, 7vw, 32px); font-weight: 700; letter-spacing: -0.01em; margin: 0; color: var(--primary); overflow-wrap: anywhere; }
+        .historial-balance-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 0; flex-shrink: 0; }
+        .historial-balance-pill { background: var(--secondary-container); color: var(--on-secondary-container); font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 9999px; white-space: nowrap; }
+        .historial-balance-flujos { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        .historial-balance-flujo { display: flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; white-space: nowrap; }
         .historial-balance-flujo.in { color: var(--income); }
         .historial-balance-flujo.out { color: var(--expense); }
 
@@ -153,7 +156,7 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
       </div>
 
       <div className="historial-balance">
-        <div>
+        <div className="historial-balance-left">
           <p className="historial-balance-label">Balance total este mes</p>
           <p className="historial-balance-valor mono">{fmt(balanceMes)}</p>
         </div>
@@ -185,6 +188,28 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, onDelete
           </button>
         ))}
       </div>
+
+      {categorias.length > 0 && (
+        <div className="historial-chips-row">
+          <button
+            className={`historial-chip ${categoriaFiltro === "todos" ? "active" : ""}`}
+            data-testid="historial-chip-categoria-todos"
+            onClick={() => setCategoriaFiltro("todos")}
+          >
+            Todas las categorías
+          </button>
+          {categorias.map((c) => (
+            <button
+              key={c.id}
+              className={`historial-chip ${categoriaFiltro === c.id ? "active" : ""}`}
+              data-testid={`historial-chip-categoria-${c.id}`}
+              onClick={() => setCategoriaFiltro((actual) => (actual === c.id ? "todos" : c.id))}
+            >
+              {c.nombre}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="historial-row2">
         <div className="historial-row2-chips">

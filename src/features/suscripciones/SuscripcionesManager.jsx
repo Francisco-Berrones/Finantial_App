@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, ChevronDown, Trash2 } from "lucide-react";
+import { Plus, ChevronDown, Trash2, Check } from "lucide-react";
 import { fmt } from "../../shared/format";
 
-export default function SuscripcionesManager({ suscripciones, cuentas, tarjetas, categorias, session, addSuscripcion, deleteSuscripcion, onChange }) {
+export default function SuscripcionesManager({ suscripciones, cuentas, tarjetas, categorias, session, addSuscripcion, deleteSuscripcion, onConfirmar, onChange }) {
   const [showAdd, setShowAdd] = useState(false);
   const [nombre, setNombre] = useState("");
   const [monto, setMonto] = useState("");
@@ -52,6 +52,11 @@ export default function SuscripcionesManager({ suscripciones, cuentas, tarjetas,
     if (ok) await onChange();
   };
 
+  const handleConfirmarAhora = async (id) => {
+    if (!confirm("¿Registrar el cobro de esta suscripción hoy, antes de su fecha programada?")) return;
+    await onConfirmar(id);
+  };
+
   return (
     <>
       <div className="section-title" style={{ margin: "16px 0 4px" }}>Suscripciones</div>
@@ -72,13 +77,25 @@ export default function SuscripcionesManager({ suscripciones, cuentas, tarjetas,
                   {s.categoria_nombre ? ` · ${s.categoria_nombre}` : ""}
                 </div>
               </div>
-              <button
-                className="row-delete-btn"
-                data-testid={`suscripcion-delete-button-${s.id}`}
-                onClick={() => handleDelete(s.id)}
-              >
-                <Trash2 size={15} />
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                {!s.pendiente_confirmar && (
+                  <button
+                    className="row-delete-btn"
+                    data-testid={`suscripcion-confirmar-ahora-button-${s.id}`}
+                    title="Registrar el cobro ahora"
+                    onClick={() => handleConfirmarAhora(s.id)}
+                  >
+                    <Check size={15} />
+                  </button>
+                )}
+                <button
+                  className="row-delete-btn"
+                  data-testid={`suscripcion-delete-button-${s.id}`}
+                  onClick={() => handleDelete(s.id)}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
             </div>
           </div>
         ))}

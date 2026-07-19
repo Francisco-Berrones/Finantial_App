@@ -1,7 +1,7 @@
 import { ArrowLeft } from "lucide-react";
 import SuscripcionesManager from "../features/suscripciones/SuscripcionesManager";
 
-export default function SuscripcionesView({ suscripciones, cuentas, tarjetas, categorias, session, addSuscripcion, deleteSuscripcion, onChange, onBack }) {
+export default function SuscripcionesView({ suscripciones, cuentas, tarjetas, categorias, session, addSuscripcion, deleteSuscripcion, onConfirmar, onChange, onBack }) {
   return (
     <div className="suscripciones-nuevo-root">
       <style>{`
@@ -59,6 +59,7 @@ export default function SuscripcionesView({ suscripciones, cuentas, tarjetas, ca
           session={session}
           addSuscripcion={addSuscripcion}
           deleteSuscripcion={deleteSuscripcion}
+          onConfirmar={onConfirmar}
           onChange={onChange}
         />
       </div>

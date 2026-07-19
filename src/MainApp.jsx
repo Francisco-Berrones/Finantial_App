@@ -42,6 +42,16 @@ export default function MainApp({ session }) {
     localStorage.setItem("fintrack-modo-oscuro", nuevo ? "1" : "0");
   };
 
+  // html/body no heredan las variables CSS de .app-root, así que sin esto
+  // se quedan con el fondo blanco por defecto del navegador y se asoma
+  // como un contorno claro alrededor de la app en modo oscuro.
+  useEffect(() => {
+    const bg = oscuro ? "#101317" : "#F7F9FB";
+    document.documentElement.style.background = bg;
+    document.body.style.background = bg;
+    document.querySelector('meta[name="theme-color"]')?.setAttribute("content", bg);
+  }, [oscuro]);
+
   const pendientesSuscripciones = suscripciones.filter((s) => s.pendiente_confirmar);
 
   const fetchAll = useCallback(async () => {
@@ -281,6 +291,7 @@ export default function MainApp({ session }) {
           session={session}
           addSuscripcion={addSuscripcion}
           deleteSuscripcion={deleteSuscripcion}
+          onConfirmar={confirmarCobroSuscripcion}
           onChange={fetchAll}
           onBack={() => setView("cuentas")}
         />
@@ -344,6 +355,7 @@ export default function MainApp({ session }) {
                     movimientos={movimientos}
                     cuentas={cuentas}
                     tarjetas={tarjetas}
+                    categorias={categorias}
                     onDelete={async (mov) => {
                       const ok = await deleteMovimiento(mov);
                       if (ok) await fetchAll();
