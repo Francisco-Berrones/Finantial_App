@@ -117,8 +117,12 @@ export default function HistorialView({ movimientos, cuentas, tarjetas, categori
         .historial-balance-label { font-size: 13px; font-weight: 500; color: var(--on-surface-variant); margin: 0 0 4px; }
         .historial-balance-valor { font-size: clamp(22px, 7vw, 32px); font-weight: 700; letter-spacing: -0.01em; margin: 0; color: var(--primary); overflow-wrap: anywhere; }
         .historial-balance-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 0; flex-shrink: 0; }
-        .historial-balance-pill { background: var(--secondary-container); color: var(--on-secondary-container); font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 9999px; white-space: nowrap; }
+        .historial-balance-pill { background: var(--secondary-container); color: var(--on-secondary-container); font-size: 12px; font-weight: 500; padding: 4px 12px; border-radius: 9999px; white-space: nowrap; flex-shrink: 0; }
         .historial-balance-flujos { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+        @media (max-width: 420px) {
+          .historial-balance-right { flex: 1 1 100%; flex-direction: row; align-items: center; justify-content: space-between; }
+          .historial-balance-flujos { justify-content: flex-end; }
+        }
         .historial-balance-flujo { display: flex; align-items: center; gap: 2px; font-size: 13px; font-weight: 600; white-space: nowrap; }
         .historial-balance-flujo.in { color: var(--income); }
         .historial-balance-flujo.out { color: var(--expense); }
