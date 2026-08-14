@@ -109,6 +109,57 @@ describe("SuscripcionesManager", () => {
     expect(screen.getByTestId("suscripciones-mes-cobro-input")).toBeInTheDocument();
   });
 
+  it("shows a Pagar button for a suscripción pendiente de confirmar and calls onPagar with it", () => {
+    const onPagar = vi.fn();
+    const suscripciones = [
+      {
+        id: "sus-1",
+        nombre: "Netflix",
+        monto: 249,
+        frecuencia: "mensual",
+        target_nombre: "Oro",
+        target_tipo: "tarjeta",
+        dias_para_cobro: 0,
+        pendiente_confirmar: true,
+      },
+    ];
+    render(
+      <SuscripcionesManager
+        suscripciones={suscripciones}
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        categorias={categorias}
+        session={session}
+        addSuscripcion={vi.fn()}
+        deleteSuscripcion={vi.fn()}
+        onChange={vi.fn()}
+        onPagar={onPagar}
+      />
+    );
+    fireEvent.click(screen.getByTestId("suscripcion-pagar-button-sus-1"));
+    expect(onPagar).toHaveBeenCalledWith(suscripciones[0]);
+  });
+
+  it("does not show a Pagar button when the suscripción is not pendiente de confirmar", () => {
+    const suscripciones = [
+      { id: "sus-1", nombre: "Netflix", monto: 249, frecuencia: "mensual", target_nombre: "Oro", dias_para_cobro: 5, pendiente_confirmar: false },
+    ];
+    render(
+      <SuscripcionesManager
+        suscripciones={suscripciones}
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        categorias={categorias}
+        session={session}
+        addSuscripcion={vi.fn()}
+        deleteSuscripcion={vi.fn()}
+        onChange={vi.fn()}
+        onPagar={vi.fn()}
+      />
+    );
+    expect(screen.queryByTestId("suscripcion-pagar-button-sus-1")).not.toBeInTheDocument();
+  });
+
   it("deletes a suscripción", () => {
     const deleteSuscripcion = vi.fn().mockResolvedValue(true);
     const suscripciones = [

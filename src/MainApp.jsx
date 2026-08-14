@@ -294,6 +294,7 @@ export default function MainApp({ session }) {
           addSuscripcion={addSuscripcion}
           deleteSuscripcion={deleteSuscripcion}
           onChange={fetchAll}
+          onPagar={abrirPagoSuscripcion}
           onBack={() => setView("cuentas")}
         />
         </motion.div>

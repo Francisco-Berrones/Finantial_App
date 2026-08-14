@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, ChevronDown, Trash2 } from "lucide-react";
 import { fmt } from "../../shared/format";
 
-export default function SuscripcionesManager({ suscripciones, cuentas, tarjetas, categorias, session, addSuscripcion, deleteSuscripcion, onChange }) {
+export default function SuscripcionesManager({ suscripciones, cuentas, tarjetas, categorias, session, addSuscripcion, deleteSuscripcion, onChange, onPagar }) {
   const [showAdd, setShowAdd] = useState(false);
   const [nombre, setNombre] = useState("");
   const [monto, setMonto] = useState("");
@@ -80,6 +80,16 @@ export default function SuscripcionesManager({ suscripciones, cuentas, tarjetas,
                 <Trash2 size={15} />
               </button>
             </div>
+            {s.pendiente_confirmar && (
+              <button
+                className="btn dark"
+                style={{ width: "100%", marginTop: 10 }}
+                data-testid={`suscripcion-pagar-button-${s.id}`}
+                onClick={() => onPagar(s)}
+              >
+                Pagar
+              </button>
+            )}
           </div>
         ))}
       </div>
