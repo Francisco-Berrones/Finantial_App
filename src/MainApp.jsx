@@ -34,6 +34,7 @@ export default function MainApp({ session }) {
   const [viewAntesDetalle, setViewAntesDetalle] = useState("inicio");
   const [mostrarPendientes, setMostrarPendientes] = useState(false);
   const [presetPagoTarjetaId, setPresetPagoTarjetaId] = useState(null);
+  const [presetSuscripcion, setPresetSuscripcion] = useState(null);
   const [oscuro, setOscuro] = useState(() => localStorage.getItem("fintrack-modo-oscuro") === "1");
 
   const toggleOscuro = () => {
@@ -55,11 +56,6 @@ export default function MainApp({ session }) {
     return creada;
   };
 
-  const confirmarCobroSuscripcion = async (id) => {
-    const ok = await confirmarCobro(id);
-    if (ok) await fetchAll();
-  };
-
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
   useEffect(() => {
@@ -75,6 +71,17 @@ export default function MainApp({ session }) {
 
   const abrirPagoTarjeta = (tarjetaId) => {
     setPresetPagoTarjetaId(tarjetaId);
+    setView("nuevoMovimiento");
+  };
+
+  const abrirPagoSuscripcion = (suscripcion) => {
+    setMostrarPendientes(false);
+    setPresetSuscripcion({
+      suscripcionId: suscripcion.id,
+      nombre: suscripcion.nombre,
+      monto: suscripcion.monto,
+      targetTipo: suscripcion.target_tipo,
+    });
     setView("nuevoMovimiento");
   };
 
@@ -234,7 +241,7 @@ export default function MainApp({ session }) {
       {view === "nuevoMovimiento" ? (
         <motion.div key="nuevoMovimiento" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <NuevoMovimientoView
-          key={presetPagoTarjetaId || "default"}
+          key={presetPagoTarjetaId || (presetSuscripcion ? `sus-${presetSuscripcion.suscripcionId}` : "default")}
           cuentas={cuentas}
           tarjetas={tarjetas}
           categorias={categorias}
@@ -242,9 +249,14 @@ export default function MainApp({ session }) {
           commitMovimiento={commitMovimiento}
           commitPagoTarjeta={commitPagoTarjeta}
           presetTarjetaId={presetPagoTarjetaId}
-          onBack={() => { setPresetPagoTarjetaId(null); setView("inicio"); }}
+          presetSuscripcion={presetSuscripcion}
+          commitPagoSuscripcion={({ suscripcionId, categoriaId, targetId }) =>
+            confirmarCobro(suscripcionId, { categoriaId, targetId })
+          }
+          onBack={() => { setPresetPagoTarjetaId(null); setPresetSuscripcion(null); setView("inicio"); }}
           onSaved={async () => {
             setPresetPagoTarjetaId(null);
+            setPresetSuscripcion(null);
             await fetchAll();
             setView("inicio");
           }}
@@ -402,7 +414,7 @@ export default function MainApp({ session }) {
       {mostrarPendientes && pendientesSuscripciones.length > 0 && (
         <SuscripcionesPendientesModal
           pendientes={pendientesSuscripciones}
-          onConfirmar={confirmarCobroSuscripcion}
+          onPagar={abrirPagoSuscripcion}
           onClose={() => setMostrarPendientes(false)}
         />
       )}

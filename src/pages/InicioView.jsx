@@ -60,7 +60,7 @@ function calcularMayorCategoria(movimientos) {
 }
 
 export default function InicioView({ cuentas, tarjetas, movimientos, msiActivas = [], onNavigateCuentas, onVerTarjeta, onAbrirResumen, onAbrirHistorial, onPagarTarjeta }) {
-  const totalAhorro = cuentas.reduce((s, c) => s + Number(c.saldo), 0);
+  const totalAhorro = cuentas.reduce((s, c) => s + Math.max(0, Number(c.saldo) || 0), 0);
   const hayCuentas = cuentas.length > 0;
   const hayTarjetas = tarjetas.length > 0;
 

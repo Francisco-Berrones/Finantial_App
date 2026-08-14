@@ -44,10 +44,14 @@ export function useSuscripciones() {
     return true;
   }, []);
 
-  const confirmarCobro = useCallback(async (id) => {
-    const { error } = await supabase.rpc("confirmar_cobro_suscripcion", { p_suscripcion_id: id });
+  const confirmarCobro = useCallback(async (id, { categoriaId, targetId } = {}) => {
+    const { error } = await supabase.rpc("confirmar_cobro_suscripcion", {
+      p_suscripcion_id: id,
+      p_categoria_id: categoriaId || null,
+      p_target_id: targetId || null,
+    });
     if (error) {
-      alert("No se pudo confirmar: " + error.message);
+      alert("No se pudo registrar el pago: " + error.message);
       return false;
     }
     return true;

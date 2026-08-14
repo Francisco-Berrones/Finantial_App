@@ -8,24 +8,24 @@ describe("SuscripcionesPendientesModal", () => {
     { id: "sus-2", nombre: "Spotify", monto: 129, target_nombre: "Cuenta Nómina" },
   ];
 
-  it("lists every pendiente suscripción with its confirm button", () => {
-    render(<SuscripcionesPendientesModal pendientes={pendientes} onConfirmar={vi.fn()} onClose={vi.fn()} />);
+  it("lists every pendiente suscripción with its pagar button", () => {
+    render(<SuscripcionesPendientesModal pendientes={pendientes} onPagar={vi.fn()} onClose={vi.fn()} />);
     expect(screen.getByText("Netflix")).toBeInTheDocument();
     expect(screen.getByText("Spotify")).toBeInTheDocument();
-    expect(screen.getByTestId("suscripciones-modal-confirmar-sus-1")).toBeInTheDocument();
-    expect(screen.getByTestId("suscripciones-modal-confirmar-sus-2")).toBeInTheDocument();
+    expect(screen.getByTestId("suscripciones-modal-pagar-sus-1")).toBeInTheDocument();
+    expect(screen.getByTestId("suscripciones-modal-pagar-sus-2")).toBeInTheDocument();
   });
 
-  it("calls onConfirmar with the suscripción id", () => {
-    const onConfirmar = vi.fn();
-    render(<SuscripcionesPendientesModal pendientes={pendientes} onConfirmar={onConfirmar} onClose={vi.fn()} />);
-    fireEvent.click(screen.getByTestId("suscripciones-modal-confirmar-sus-1"));
-    expect(onConfirmar).toHaveBeenCalledWith("sus-1");
+  it("calls onPagar with the full suscripción", () => {
+    const onPagar = vi.fn();
+    render(<SuscripcionesPendientesModal pendientes={pendientes} onPagar={onPagar} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByTestId("suscripciones-modal-pagar-sus-1"));
+    expect(onPagar).toHaveBeenCalledWith(pendientes[0]);
   });
 
   it("calls onClose from the close icon and from 'Ahora no'", () => {
     const onClose = vi.fn();
-    render(<SuscripcionesPendientesModal pendientes={pendientes} onConfirmar={vi.fn()} onClose={onClose} />);
+    render(<SuscripcionesPendientesModal pendientes={pendientes} onPagar={vi.fn()} onClose={onClose} />);
     fireEvent.click(screen.getByTestId("suscripciones-modal-close"));
     expect(onClose).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByTestId("suscripciones-modal-ahora-no"));

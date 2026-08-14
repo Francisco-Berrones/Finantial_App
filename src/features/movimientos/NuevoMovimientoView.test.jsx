@@ -216,6 +216,58 @@ describe("NuevoMovimientoView", () => {
     expect(screen.queryByTestId("nuevo-mov-categoria-abrir-button")).not.toBeInTheDocument();
   });
 
+  it("prefills nota and monto when paying a suscripción, hides the tipo grid, and commits via commitPagoSuscripcion", () => {
+    const commitPagoSuscripcion = vi.fn().mockResolvedValue(true);
+    const onSaved = vi.fn();
+    const presetSuscripcion = { suscripcionId: "sus-1", nombre: "Netflix", monto: 249, targetTipo: "tarjeta" };
+    render(
+      <NuevoMovimientoView
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        commitMovimiento={vi.fn()}
+        commitPagoSuscripcion={commitPagoSuscripcion}
+        presetSuscripcion={presetSuscripcion}
+        onBack={vi.fn()}
+        onSaved={onSaved}
+      />
+    );
+
+    expect(screen.getByTestId("nuevo-mov-monto-input")).toHaveValue("249");
+    expect(screen.getByTestId("nuevo-mov-nota-input")).toHaveValue("Netflix");
+    expect(screen.getByTestId("nuevo-mov-monto-input")).toBeDisabled();
+    expect(screen.getByTestId("nuevo-mov-nota-input")).toBeDisabled();
+    expect(screen.queryByTestId("tipo-card-gasto_credito")).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByTestId("nuevo-mov-target-select"), { target: { value: "2" } });
+    fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
+
+    expect(commitPagoSuscripcion).toHaveBeenCalledWith({
+      suscripcionId: "sus-1",
+      categoriaId: null,
+      targetId: 2,
+    });
+  });
+
+  it("blocks submitting a suscripción payment without picking where the money comes from", () => {
+    const commitPagoSuscripcion = vi.fn().mockResolvedValue(true);
+    const presetSuscripcion = { suscripcionId: "sus-1", nombre: "Netflix", monto: 249, targetTipo: "tarjeta" };
+    render(
+      <NuevoMovimientoView
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        commitMovimiento={vi.fn()}
+        commitPagoSuscripcion={commitPagoSuscripcion}
+        presetSuscripcion={presetSuscripcion}
+        onBack={vi.fn()}
+        onSaved={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("nuevo-mov-registrar-button"));
+
+    expect(commitPagoSuscripcion).not.toHaveBeenCalled();
+  });
+
   it("creates a new categoria from the picker and selects it", async () => {
     const commitMovimiento = vi.fn().mockResolvedValue(true);
     const crearCategoria = vi.fn().mockResolvedValue({ id: "cat-nueva", nombre: "Mascotas" });

@@ -13,15 +13,21 @@ const TIPO_STYLES = {
   ingreso_cuenta: { icon: PlusCircle, color: "#1B5E20", corto: "Ingreso" },
 };
 
-export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = [], crearCategoria, commitMovimiento, commitPagoTarjeta, presetTarjetaId, onBack, onSaved }) {
-  const [accion, setAccion] = useState(presetTarjetaId ? "pago_tarjeta" : "gasto_credito");
+export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = [], crearCategoria, commitMovimiento, commitPagoTarjeta, presetTarjetaId, presetSuscripcion, commitPagoSuscripcion, onBack, onSaved }) {
+  const esPagoSuscripcion = !!presetSuscripcion;
+  const [accion, setAccion] = useState(
+    esPagoSuscripcion
+      ? (presetSuscripcion.targetTipo === "tarjeta" ? "gasto_credito" : "gasto_debito")
+      : presetTarjetaId ? "pago_tarjeta" : "gasto_credito"
+  );
   const [targetId, setTargetId] = useState(presetTarjetaId || "");
-  const [monto, setMonto] = useState("");
-  const [nota, setNota] = useState("");
+  const [monto, setMonto] = useState(esPagoSuscripcion ? String(presetSuscripcion.monto) : "");
+  const [nota, setNota] = useState(esPagoSuscripcion ? presetSuscripcion.nombre : "");
   const [asignaciones, setAsignaciones] = useState({});
   const [origenCuentaId, setOrigenCuentaId] = useState("");
   const [categoriaId, setCategoriaId] = useState("");
   const [categoriaPickerAbierto, setCategoriaPickerAbierto] = useState(false);
+  const [guardando, setGuardando] = useState(false);
 
   const esPagoTarjeta = accion === "pago_tarjeta";
   const requiereCategoria = accion === "gasto_credito" || accion === "gasto_debito";
@@ -57,22 +63,55 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = []
   };
 
   const handleGuardar = async () => {
-    if (esPagoTarjeta) {
-      const listaAsignaciones = Object.entries(asignaciones)
-        .filter(([, v]) => parseFloat(v) > 0)
-        .map(([compra_id, v]) => ({ compra_id, monto: parseFloat(v) }));
-      const ok = await commitPagoTarjeta({
-        tarjetaId: targetId,
-        monto: montoTotalPago,
-        origenCuentaId: origenCuentaId || null,
-        asignaciones: listaAsignaciones,
-        nota,
-      });
+    if (guardando) return;
+    setGuardando(true);
+    try {
+      if (esPagoSuscripcion) {
+        if (!targetId) {
+          alert("Elige de dónde sale el dinero");
+          return;
+        }
+        const ok = await commitPagoSuscripcion({
+          suscripcionId: presetSuscripcion.suscripcionId,
+          categoriaId: categoriaId || null,
+          targetId,
+        });
+        if (ok) await onSaved();
+        return;
+      }
+      if (esPagoTarjeta) {
+        if (origenCuentaId) {
+          const cuentaOrigen = cuentas.find((c) => String(c.id) === String(origenCuentaId));
+          if (cuentaOrigen && montoTotalPago > (Number(cuentaOrigen.saldo) || 0)) {
+            alert(`Saldo insuficiente en ${cuentaOrigen.nombre}. Disponible: ${fmt(Math.max(0, Number(cuentaOrigen.saldo) || 0))}`);
+            return;
+          }
+        }
+        const listaAsignaciones = Object.entries(asignaciones)
+          .filter(([, v]) => parseFloat(v) > 0)
+          .map(([compra_id, v]) => ({ compra_id, monto: parseFloat(v) }));
+        const ok = await commitPagoTarjeta({
+          tarjetaId: targetId,
+          monto: montoTotalPago,
+          origenCuentaId: origenCuentaId || null,
+          asignaciones: listaAsignaciones,
+          nota,
+        });
+        if (ok) await onSaved();
+        return;
+      }
+      if (accion === "gasto_debito") {
+        const cuentaOrigen = cuentas.find((c) => String(c.id) === String(targetId));
+        if (cuentaOrigen && montoGeneral > (Number(cuentaOrigen.saldo) || 0)) {
+          alert(`Saldo insuficiente en ${cuentaOrigen.nombre}. Disponible: ${fmt(Math.max(0, Number(cuentaOrigen.saldo) || 0))}`);
+          return;
+        }
+      }
+      const ok = await commitMovimiento({ accion, targetId, monto, nota, categoriaId: categoriaId || null });
       if (ok) await onSaved();
-      return;
+    } finally {
+      setGuardando(false);
     }
-    const ok = await commitMovimiento({ accion, targetId, monto, nota, categoriaId: categoriaId || null });
-    if (ok) await onSaved();
   };
 
   return (
@@ -162,32 +201,41 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = []
         <button className="nm-back" data-testid="nuevo-mov-back-button" onClick={onBack}>
           <ArrowLeft size={20} />
         </button>
-        <span className="nm-titulo">Nuevo movimiento</span>
+        <span className="nm-titulo">{esPagoSuscripcion ? "Pagar suscripción" : "Nuevo movimiento"}</span>
       </div>
 
       <div className="nm-body">
-        <div className="nm-tipo-grid">
-          {Object.entries(ACCIONES).map(([tipo, meta]) => {
-            const style = TIPO_STYLES[tipo];
-            const Icon = style.icon;
-            const disabled = meta.targetTipo === "tarjeta" ? !hayTarjetas : !hayCuentas;
-            return (
-              <button
-                key={tipo}
-                className={`nm-tipo-btn ${accion === tipo ? "active" : ""}`}
-                data-testid={`tipo-card-${tipo}`}
-                disabled={disabled}
-                onClick={() => elegirAccion(tipo, disabled)}
-              >
-                <span className="nm-tipo-icono"><Icon size={22} /></span>
-                <span className="nm-tipo-label">{style.corto}</span>
-              </button>
-            );
-          })}
-        </div>
+        {esPagoSuscripcion ? (
+          <div className="nm-field">
+            <label className="nm-label">Suscripción</label>
+            <div className="nm-input" data-testid="nuevo-mov-suscripcion-nombre" style={{ fontWeight: 600 }}>
+              {presetSuscripcion.nombre}
+            </div>
+          </div>
+        ) : (
+          <div className="nm-tipo-grid">
+            {Object.entries(ACCIONES).map(([tipo, meta]) => {
+              const style = TIPO_STYLES[tipo];
+              const Icon = style.icon;
+              const disabled = meta.targetTipo === "tarjeta" ? !hayTarjetas : !hayCuentas;
+              return (
+                <button
+                  key={tipo}
+                  className={`nm-tipo-btn ${accion === tipo ? "active" : ""}`}
+                  data-testid={`tipo-card-${tipo}`}
+                  disabled={disabled}
+                  onClick={() => elegirAccion(tipo, disabled)}
+                >
+                  <span className="nm-tipo-icono"><Icon size={22} /></span>
+                  <span className="nm-tipo-label">{style.corto}</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         <div className="nm-field">
-          <label className="nm-label">Selecciona movimiento</label>
+          <label className="nm-label">{esPagoSuscripcion ? "¿De dónde sale el dinero?" : "Selecciona movimiento"}</label>
           <div className="nm-select-wrap">
             <select
               className="nm-select required"
@@ -288,6 +336,7 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = []
               placeholder="0.00"
               data-testid="nuevo-mov-monto-input"
               value={monto}
+              disabled={esPagoSuscripcion}
               onChange={(e) => setMonto(e.target.value.replace(/[^0-9.]/g, ""))}
             />
           </div>
@@ -298,6 +347,7 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = []
           placeholder="Nota (opcional)"
           data-testid="nuevo-mov-nota-input"
           value={nota}
+          disabled={esPagoSuscripcion}
           onChange={(e) => setNota(e.target.value)}
         />
 
@@ -326,8 +376,8 @@ export default function NuevoMovimientoView({ cuentas, tarjetas, categorias = []
           </div>
         )}
 
-        <button className="nm-submit" data-testid="nuevo-mov-registrar-button" onClick={handleGuardar}>
-          <Check size={18} /> Registrar
+        <button className="nm-submit" data-testid="nuevo-mov-registrar-button" onClick={handleGuardar} disabled={guardando}>
+          <Check size={18} /> {esPagoSuscripcion ? "Pagar suscripción" : "Registrar"}
         </button>
       </div>
     </div>

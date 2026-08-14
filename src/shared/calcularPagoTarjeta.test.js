@@ -53,6 +53,22 @@ describe("proximoPagoDeTarjeta", () => {
     expect(resultado.monto).toBeCloseTo(300, 2);
   });
 
+  it("subtracts a pago made before the corte closed (an early/mid-cycle abono), not just ones made after", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 7)); // último corte fue el 25 de junio
+
+    const tarjeta = { id: "t1", dia_corte: 25, dia_pago: 15 };
+    const movimientos = [
+      { tipo_accion: "gasto_credito", target_id: "t1", monto: 500, nota: "", fecha: "2026-06-10T00:00:00Z" },
+      // Abono hecho ANTES de que cerrara el corte del 25 de junio -- debe descontarse igual
+      { tipo_accion: "pago_tarjeta", target_id: "t1", monto: 200, nota: "", fecha: "2026-06-15T00:00:00Z" },
+    ];
+
+    const resultado = proximoPagoDeTarjeta(tarjeta, movimientos, []);
+
+    expect(resultado.monto).toBeCloseTo(300, 2);
+  });
+
   it("never returns a negative monto when payments exceed the amount owed", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 6, 7));

@@ -1,7 +1,7 @@
 import { X, Check } from "lucide-react";
 import { fmt } from "../../shared/format";
 
-export default function SuscripcionesPendientesModal({ pendientes, onConfirmar, onClose }) {
+export default function SuscripcionesPendientesModal({ pendientes, onPagar, onClose }) {
   return (
     <div className="sus-modal-backdrop" data-testid="suscripciones-modal-backdrop">
       <style>{`
@@ -33,10 +33,10 @@ export default function SuscripcionesPendientesModal({ pendientes, onConfirmar, 
             </div>
             <button
               className="sus-modal-confirm-btn"
-              data-testid={`suscripciones-modal-confirmar-${s.id}`}
-              onClick={() => onConfirmar(s.id)}
+              data-testid={`suscripciones-modal-pagar-${s.id}`}
+              onClick={() => onPagar(s)}
             >
-              <Check size={14} /> Confirmar
+              <Check size={14} /> Pagar
             </button>
           </div>
         ))}

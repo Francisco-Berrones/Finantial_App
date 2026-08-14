@@ -35,7 +35,7 @@ export default function CuentaRow({ cuenta, onDelete }) {
       </div>
       <div>
         <p className="cuenta-bento-nombre">{cuenta.nombre}</p>
-        <p className="cuenta-bento-saldo mono">{fmt(cuenta.saldo)}</p>
+        <p className="cuenta-bento-saldo mono">{fmt(Math.max(0, Number(cuenta.saldo) || 0))}</p>
       </div>
     </motion.div>
   );

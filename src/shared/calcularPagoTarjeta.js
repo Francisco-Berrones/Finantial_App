@@ -30,15 +30,17 @@ export function proximoPagoDeTarjeta(tarjeta, movimientos, msiActivas) {
     .filter((c) => c.tarjeta_id === tarjeta.id)
     .reduce((s, c) => s + Number(c.mensualidad), 0);
 
-  // Pagos que el usuario ya hizo a esta tarjeta desde que cerró el corte -- se
-  // descuentan del monto a pagar, para que una tarjeta ya liquidada deje de
-  // aparecer como pendiente (ver proximaTarjetaAPagar).
+  // Pagos que el usuario ya hizo a esta tarjeta desde que empezó a acumularse el
+  // ciclo cerrado -- se descuentan del monto a pagar, para que una tarjeta ya
+  // liquidada deje de aparecer como pendiente (ver proximaTarjetaAPagar). Se
+  // cuenta desde inicioCicloCerrado (no solo desde ultimoCorte) porque un abono
+  // hecho ANTES de que cerrara el corte también reduce lo que realmente se debe.
   const pagosRealizados = movimientos
     .filter(
       (m) =>
         m.tipo_accion === "pago_tarjeta" &&
         m.target_id === tarjeta.id &&
-        new Date(m.fecha) > ultimoCorte
+        new Date(m.fecha) > inicioCicloCerrado
     )
     .reduce((s, m) => s + Number(m.monto), 0);
 

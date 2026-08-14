@@ -216,7 +216,9 @@ Deno.serve(async (req) => {
 
   // Pagos que el usuario ya hizo a esta tarjeta desde una fecha dada -- se descuentan del
   // monto a pagar, para que una tarjeta ya liquidada deje de aparecer como pendiente
-  // (mismo cálculo que src/shared/calcularPagoTarjeta.js en el frontend).
+  // (mismo cálculo que src/shared/calcularPagoTarjeta.js en el frontend). Se llama con
+  // inicioCicloCerrado (no ultimoCorte) porque un abono hecho ANTES de que cerrara el
+  // corte también reduce lo que realmente se debe.
   function pagosRealizadosDesde(tarjetaId: string, desde: Date): number {
     return movimientosList
       .filter((m) => m.tipo_accion === "pago_tarjeta" && m.target_id === tarjetaId && new Date(m.fecha) > desde)
@@ -247,7 +249,7 @@ Deno.serve(async (req) => {
           const inicioCicloCerrado = new Date(ultimoCorte);
           inicioCicloCerrado.setMonth(inicioCicloCerrado.getMonth() - 1);
           const gastoCicloCerrado = gastoNormalEnVentana(t.id, inicioCicloCerrado, ultimoCorte);
-          const pagosRealizados = pagosRealizadosDesde(t.id, ultimoCorte);
+          const pagosRealizados = pagosRealizadosDesde(t.id, inicioCicloCerrado);
           const totalAPagar = Math.max(0, gastoCicloCerrado + mensualidadesMsi - pagosRealizados);
           textoAPagar =
             `$${totalAPagar.toFixed(2)} (gasto normal del ciclo que cerró en tu corte del ${fmtFechaLarga(ultimoCorte)}: ` +
