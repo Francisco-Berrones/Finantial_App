@@ -21,6 +21,17 @@ const TarjetasManager = forwardRef(function TarjetasManager({ tarjetas, session,
     if (ok) await onChange();
   };
 
+  // Tarjetas con fecha límite de pago más próxima primero; las que aún no
+  // tienen un corte registrado (fecha_limite_pago null) van al final. La
+  // comparación de strings "YYYY-MM-DD" ya ordena cronológicamente sin
+  // necesidad de parsear a Date (evita el desfase de zona horaria).
+  const tarjetasOrdenadas = [...tarjetas].sort((a, b) => {
+    if (!a.fecha_limite_pago && !b.fecha_limite_pago) return 0;
+    if (!a.fecha_limite_pago) return 1;
+    if (!b.fecha_limite_pago) return -1;
+    return a.fecha_limite_pago < b.fecha_limite_pago ? -1 : 1;
+  });
+
   return (
     <div className="tarjetas-sec-root">
       <style>{`
@@ -49,7 +60,7 @@ const TarjetasManager = forwardRef(function TarjetasManager({ tarjetas, session,
       </div>
 
       <div className="tarjetas-sec-list">
-        {tarjetas.map((t) => (
+        {tarjetasOrdenadas.map((t) => (
           <TarjetaRow
             key={t.id}
             tarjeta={t}

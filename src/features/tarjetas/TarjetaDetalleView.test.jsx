@@ -15,6 +15,47 @@ describe("TarjetaDetalleView", () => {
     expect(screen.getAllByText("No capturado")).toHaveLength(2);
   });
 
+  it("shows saldo a pagar with fecha límite, and a note that saldo actual is a different, larger number", () => {
+    useMsiDetalle.mockReturnValue({ compras: [], cargando: false, fetchMsi: vi.fn() });
+    const tarjeta = {
+      id: "t1",
+      nombre: "Oro",
+      dia_corte: 25,
+      dia_pago: 15,
+      saldo_usado: 5800,
+      saldo_a_pagar: 4587,
+      fecha_limite_pago: "2026-08-15",
+      saldo_proximo_corte: 1213,
+    };
+    render(<TarjetaDetalleView tarjeta={tarjeta} onBack={vi.fn()} />);
+
+    expect(screen.getByTestId("tarjeta-detalle-saldo-pagar")).toHaveTextContent("$4,587.00");
+    expect(screen.getByText(/corte del 25/)).toBeInTheDocument();
+    expect(screen.getByText(/fecha límite: 15 ago\.?\s*2026/)).toBeInTheDocument();
+    expect(screen.getByTestId("tarjeta-detalle-saldo-actual")).toHaveTextContent("$5,800.00");
+    expect(screen.getByText(/Incluye \$1,213.00 de compras después del corte/)).toBeInTheDocument();
+  });
+
+  it("shows an explicit 'aún no se registra un corte' message instead of $0 when saldo_a_pagar is null", () => {
+    useMsiDetalle.mockReturnValue({ compras: [], cargando: false, fetchMsi: vi.fn() });
+    const tarjeta = {
+      id: "t1",
+      nombre: "Oro",
+      dia_corte: 25,
+      dia_pago: 15,
+      saldo_usado: 1200,
+      saldo_a_pagar: null,
+      fecha_limite_pago: null,
+      saldo_proximo_corte: 1200,
+    };
+    render(<TarjetaDetalleView tarjeta={tarjeta} onBack={vi.fn()} />);
+
+    expect(screen.getByText("Aún no se registra un corte para esta tarjeta.")).toBeInTheDocument();
+    expect(screen.getByTestId("tarjeta-detalle-saldo-pagar-sin-dato")).toBeInTheDocument();
+    expect(screen.queryByText("$0.00")).not.toBeInTheDocument();
+    expect(screen.getByTestId("tarjeta-detalle-saldo-actual")).toHaveTextContent("$1,200.00");
+  });
+
   it("shows días restantes when dia_corte/dia_pago are set", () => {
     useMsiDetalle.mockReturnValue({ compras: [], cargando: false, fetchMsi: vi.fn() });
     const tarjeta = { id: "t1", nombre: "Oro", dia_corte: 15, dia_pago: 5 };

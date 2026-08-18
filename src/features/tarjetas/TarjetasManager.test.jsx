@@ -82,6 +82,28 @@ describe("TarjetasManager", () => {
     });
   });
 
+  it("orders tarjetas by fecha_limite_pago más próxima primero, sin corte al final", () => {
+    const tarjetasVarias = [
+      { id: "sin-corte", nombre: "Sin Corte", linea_total: 1000, saldo_usado: 0, fecha_limite_pago: null },
+      { id: "lejana", nombre: "Lejana", linea_total: 1000, saldo_usado: 0, fecha_limite_pago: "2026-12-01" },
+      { id: "proxima", nombre: "Proxima", linea_total: 1000, saldo_usado: 0, fecha_limite_pago: "2026-08-05" },
+    ];
+    const { container } = render(
+      <TarjetasManager
+        tarjetas={tarjetasVarias}
+        session={session}
+        addTarjeta={vi.fn()}
+        deleteTarjeta={vi.fn()}
+        onChange={vi.fn()}
+        onVerTarjeta={vi.fn()}
+      />
+    );
+    const idsEnOrden = Array.from(container.querySelectorAll('[data-testid^="tarjeta-row-"]'))
+      .filter((el) => !el.getAttribute("data-testid").includes("delete-button"))
+      .map((el) => el.getAttribute("data-testid").replace("tarjeta-row-", ""));
+    expect(idsEnOrden).toEqual(["proxima", "lejana", "sin-corte"]);
+  });
+
   it("deletes a tarjeta", () => {
     const deleteTarjeta = vi.fn().mockResolvedValue(true);
     render(

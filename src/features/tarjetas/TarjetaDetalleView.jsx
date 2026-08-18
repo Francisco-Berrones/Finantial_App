@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, CreditCard, Nfc, Pencil, Plus } from "lucide-react";
-import { fmt } from "../../shared/format";
+import { fmt, fmtFechaCorta } from "../../shared/format";
 import { diasHasta, formatDiasFaltantes } from "../../shared/dateUtils";
 import { gradienteBanco } from "../../shared/bancoColores";
 import { useMsiDetalle } from "./useMsiDetalle";
@@ -99,12 +99,21 @@ export default function TarjetaDetalleView({ tarjeta, categorias = [], movimient
         .tarjeta-det-bento { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
         .tarjeta-det-bento-limite { grid-column: span 2; background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 16px; padding: 18px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
         .tarjeta-det-bento-card { background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 16px; padding: 16px; }
-        .tarjeta-det-bento-card.deuda { border-left: 4px solid var(--expense); }
         .tarjeta-det-bento-label { font-size: 12px; color: var(--on-surface-variant); margin: 0 0 4px; }
         .tarjeta-det-bento-valor { font-size: 18px; font-weight: 700; color: var(--on-surface); }
-        .tarjeta-det-bento-valor.aviso { color: var(--expense); }
         .tarjeta-det-bento-bar { height: 6px; width: 100px; flex-shrink: 0; background: var(--surface-hi); border-radius: 9999px; overflow: hidden; }
         .tarjeta-det-bento-bar-fill { height: 100%; background: var(--primary-container); }
+
+        .tarjeta-det-saldos-intro { font-size: 12px; color: var(--on-surface-variant); margin: 0 0 12px; line-height: 1.4; }
+        .tarjeta-det-saldo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
+        .tarjeta-det-saldo-card { background: var(--surface); border: 1px solid var(--outline-variant); border-radius: 16px; padding: 16px; }
+        .tarjeta-det-saldo-card.pagar { border-left: 4px solid var(--expense); }
+        .tarjeta-det-saldo-card.actual { border-left: 4px solid var(--primary-container); }
+        .tarjeta-det-saldo-label { font-size: 12px; font-weight: 600; color: var(--on-surface-variant); margin: 0 0 4px; }
+        .tarjeta-det-saldo-valor { font-size: 19px; font-weight: 700; color: var(--on-surface); margin: 0; }
+        .tarjeta-det-saldo-card.pagar .tarjeta-det-saldo-valor { color: var(--expense); }
+        .tarjeta-det-saldo-valor.sin-dato { font-size: 14px; font-weight: 600; color: var(--outline); }
+        .tarjeta-det-saldo-nota { font-size: 11px; color: var(--on-surface-variant); margin: 6px 0 0; line-height: 1.4; }
 
         .tarjeta-det-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
         .tarjeta-det-section-titulo { font-size: 16px; font-weight: 600; color: var(--on-surface); }
@@ -184,13 +193,47 @@ export default function TarjetaDetalleView({ tarjeta, categorias = [], movimient
               <div className="tarjeta-det-bento-bar-fill" style={{ width: `${porcentajeUsado}%` }} />
             </div>
           </div>
-          <div className="tarjeta-det-bento-card">
+          <div className="tarjeta-det-bento-card" style={{ gridColumn: "span 2" }}>
             <p className="tarjeta-det-bento-label">Disponible</p>
             <p className="tarjeta-det-bento-valor mono">{fmt(disponible)}</p>
           </div>
-          <div className="tarjeta-det-bento-card deuda">
-            <p className="tarjeta-det-bento-label">Deuda Total</p>
-            <p className="tarjeta-det-bento-valor aviso mono">{fmt(tarjeta.saldo_usado)}</p>
+        </div>
+
+        <div className="tarjeta-det-section-head">
+          <span className="tarjeta-det-section-titulo">Saldo a pagar vs. saldo actual</span>
+        </div>
+        <p className="tarjeta-det-saldos-intro">
+          Son dos números distintos: el primero es lo que evita intereses si lo pagas a tiempo; el segundo es tu deuda total en este momento.
+        </p>
+        <div className="tarjeta-det-saldo-grid">
+          <div className="tarjeta-det-saldo-card pagar">
+            <p className="tarjeta-det-saldo-label">
+              Saldo a pagar{tarjeta.dia_corte ? ` (corte del ${tarjeta.dia_corte})` : ""}
+            </p>
+            {tarjeta.saldo_a_pagar == null ? (
+              <>
+                <p className="tarjeta-det-saldo-valor sin-dato" data-testid="tarjeta-detalle-saldo-pagar-sin-dato">—</p>
+                <p className="tarjeta-det-saldo-nota">Aún no se registra un corte para esta tarjeta.</p>
+              </>
+            ) : (
+              <>
+                <p className="tarjeta-det-saldo-valor mono" data-testid="tarjeta-detalle-saldo-pagar">{fmt(tarjeta.saldo_a_pagar)}</p>
+                <p className="tarjeta-det-saldo-nota">
+                  {tarjeta.fecha_limite_pago
+                    ? `fecha límite: ${fmtFechaCorta(tarjeta.fecha_limite_pago)}`
+                    : "Sin fecha límite registrada"}
+                </p>
+              </>
+            )}
+          </div>
+          <div className="tarjeta-det-saldo-card actual">
+            <p className="tarjeta-det-saldo-label">Saldo actual</p>
+            <p className="tarjeta-det-saldo-valor mono" data-testid="tarjeta-detalle-saldo-actual">{fmt(tarjeta.saldo_usado)}</p>
+            <p className="tarjeta-det-saldo-nota">
+              {tarjeta.saldo_a_pagar != null
+                ? `Incluye ${fmt(tarjeta.saldo_proximo_corte)} de compras después del corte, que se pagan el siguiente ciclo.`
+                : "Se actualiza en tiempo real con cada movimiento."}
+            </p>
           </div>
         </div>
 
