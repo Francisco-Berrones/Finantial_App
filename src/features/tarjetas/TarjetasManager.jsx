@@ -3,7 +3,7 @@ import { CreditCard } from "lucide-react";
 import TarjetaRow from "./TarjetaRow";
 import NuevaTarjetaModal from "./NuevaTarjetaModal";
 
-const TarjetasManager = forwardRef(function TarjetasManager({ tarjetas, session, addTarjeta, deleteTarjeta, onChange, onVerTarjeta, onPagarTarjeta, movimientos = [], msiActivas = [] }, ref) {
+const TarjetasManager = forwardRef(function TarjetasManager({ tarjetas, session, addTarjeta, deleteTarjeta, onChange, onVerTarjeta, onPagarTarjeta }, ref) {
   const [showAdd, setShowAdd] = useState(false);
 
   useImperativeHandle(ref, () => ({
@@ -53,8 +53,6 @@ const TarjetasManager = forwardRef(function TarjetasManager({ tarjetas, session,
           <TarjetaRow
             key={t.id}
             tarjeta={t}
-            movimientos={movimientos}
-            msiActivas={msiActivas}
             onDelete={handleDelete}
             onClick={() => onVerTarjeta(t.id)}
             onPagarAhora={onPagarTarjeta}

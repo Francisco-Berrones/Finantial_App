@@ -60,31 +60,68 @@ describe("InicioView", () => {
     expect(onAbrirHistorial).toHaveBeenCalled();
   });
 
-  it("shows the próximo vencimiento card and calls onPagarTarjeta when confirmed", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2026, 6, 7));
-
-    const movimientos = [
-      { id: 1, tipo_accion: "gasto_credito", target_id: "t1", monto: 300, fecha: "2026-06-10T00:00:00Z", nota: "" },
+  it("shows the destacado recordatorio (al_dia) and calls onPagarTarjeta when it's a tarjeta", () => {
+    const recordatorios = [
+      { tipo: "tarjeta", id: "t1", nombre: "Oro", monto: 4587, estado: "al_dia", fecha_referencia: "2026-07-20", dias: 5 },
     ];
     const onPagarTarjeta = vi.fn();
+    const onVerTarjeta = vi.fn();
 
     render(
       <InicioView
         cuentas={cuentas}
         tarjetas={tarjetas}
-        movimientos={movimientos}
+        movimientos={[]}
+        recordatorios={recordatorios}
+        onNavigateCuentas={vi.fn()}
+        onVerTarjeta={onVerTarjeta}
+        onAbrirResumen={vi.fn()}
+        onAbrirHistorial={vi.fn()}
+        onPagarTarjeta={onPagarTarjeta}
+        onPagarSuscripcion={vi.fn()}
+      />
+    );
+
+    const card = screen.getByTestId("inicio-recordatorio-card");
+    expect(card).toBeInTheDocument();
+    expect(card).not.toHaveClass("atrasado");
+    expect(screen.getByText(/Oro · en 5 días/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("inicio-recordatorio-ver"));
+    expect(onVerTarjeta).toHaveBeenCalledWith("t1");
+
+    fireEvent.click(screen.getByTestId("inicio-pagar-ahora-button"));
+    expect(onPagarTarjeta).toHaveBeenCalledWith("t1");
+  });
+
+  it("shows the atrasado tone (no negative number) and calls onPagarSuscripcion for a suscripción", () => {
+    const recordatorios = [
+      { tipo: "suscripcion", id: "s1", nombre: "Netflix", monto: 249, estado: "atrasado", fecha_referencia: "2026-06-30", dias: 3 },
+    ];
+    const onPagarSuscripcion = vi.fn();
+
+    render(
+      <InicioView
+        cuentas={cuentas}
+        tarjetas={tarjetas}
+        movimientos={[]}
+        recordatorios={recordatorios}
         onNavigateCuentas={vi.fn()}
         onVerTarjeta={vi.fn()}
         onAbrirResumen={vi.fn()}
         onAbrirHistorial={vi.fn()}
-        onPagarTarjeta={onPagarTarjeta}
+        onPagarTarjeta={vi.fn()}
+        onPagarSuscripcion={onPagarSuscripcion}
       />
     );
 
-    expect(screen.getByTestId("inicio-vencimiento-card")).toBeInTheDocument();
+    const card = screen.getByTestId("inicio-recordatorio-card");
+    expect(card).toHaveClass("atrasado");
+    expect(screen.getByText(/Netflix · atrasado 3 días/)).toBeInTheDocument();
+    expect(card.textContent).not.toContain("-3");
+
     fireEvent.click(screen.getByTestId("inicio-pagar-ahora-button"));
-    expect(onPagarTarjeta).toHaveBeenCalledWith("t1");
+    expect(onPagarSuscripcion).toHaveBeenCalledWith(recordatorios[0]);
   });
 
   afterEach(() => {

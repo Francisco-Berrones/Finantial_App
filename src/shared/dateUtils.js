@@ -62,3 +62,17 @@ export function formatDiasFaltantes(dias) {
   if (dias === 1) return "en 1 día";
   return `en ${dias} días`;
 }
+
+// Texto para un recordatorio (tarjeta o suscripción) según su `estado` de
+// recordatorios_pendientes. `dias` SIEMPRE llega como conteo positivo desde la
+// base de datos -- tanto "cuánto falta" (al_dia) como "cuánto atraso lleva"
+// (atrasado) -- así que aquí nunca se resta ni se antepone un signo "-".
+export function textoRecordatorio(estado, dias) {
+  if (estado === "atrasado") {
+    if (dias === 0) return "vence hoy";
+    return `atrasado ${dias} día${dias === 1 ? "" : "s"}`;
+  }
+  if (dias === 0) return "hoy";
+  if (dias === 1) return "en 1 día";
+  return `en ${dias} días`;
+}

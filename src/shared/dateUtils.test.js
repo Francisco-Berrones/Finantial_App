@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { diasHasta, formatDiasFaltantes, fechaUltimoCorte, fechaPagoDeCorte } from "./dateUtils";
+import { diasHasta, formatDiasFaltantes, fechaUltimoCorte, fechaPagoDeCorte, textoRecordatorio } from "./dateUtils";
 
 describe("diasHasta", () => {
   afterEach(() => {
@@ -78,5 +78,20 @@ describe("formatDiasFaltantes", () => {
     expect(formatDiasFaltantes(0)).toBe("hoy");
     expect(formatDiasFaltantes(1)).toBe("en 1 día");
     expect(formatDiasFaltantes(8)).toBe("en 8 días");
+  });
+});
+
+describe("textoRecordatorio", () => {
+  it("formats al_dia as a forward countdown", () => {
+    expect(textoRecordatorio("al_dia", 0)).toBe("hoy");
+    expect(textoRecordatorio("al_dia", 1)).toBe("en 1 día");
+    expect(textoRecordatorio("al_dia", 8)).toBe("en 8 días");
+  });
+
+  it("formats atrasado using the positive días de atraso, never a negative number", () => {
+    expect(textoRecordatorio("atrasado", 0)).toBe("vence hoy");
+    expect(textoRecordatorio("atrasado", 1)).toBe("atrasado 1 día");
+    expect(textoRecordatorio("atrasado", 5)).toBe("atrasado 5 días");
+    expect(textoRecordatorio("atrasado", 5)).not.toContain("-");
   });
 });

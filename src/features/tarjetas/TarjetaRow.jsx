@@ -1,12 +1,13 @@
 import { motion } from "framer-motion";
 import { Nfc, Trash2 } from "lucide-react";
-import { fmt, fmtDiaCorto } from "../../shared/format";
+import { fmt } from "../../shared/format";
+import { textoRecordatorio } from "../../shared/dateUtils";
 import { gradienteBanco } from "../../shared/bancoColores";
-import { proximoPagoDeTarjeta } from "../../shared/calcularPagoTarjeta";
 
-export default function TarjetaRow({ tarjeta, movimientos = [], msiActivas = [], onDelete, onClick, onPagarAhora }) {
+export default function TarjetaRow({ tarjeta, onDelete, onClick, onPagarAhora }) {
   const disponible = tarjeta.linea_total - tarjeta.saldo_usado;
-  const pago = proximoPagoDeTarjeta(tarjeta, movimientos, msiActivas);
+  const hayPago = tarjeta.dia_pago && tarjeta.dias != null;
+  const atrasado = tarjeta.estado === "atrasado";
   const fondo = tarjeta.color || gradienteBanco(tarjeta.banco);
 
   return (
@@ -79,7 +80,9 @@ export default function TarjetaRow({ tarjeta, movimientos = [], msiActivas = [],
         </div>
         <div className="tarjeta-bento-stat">
           <p className="tarjeta-bento-stat-label">Próximo Pago</p>
-          <p className="tarjeta-bento-stat-value aviso">{pago ? fmtDiaCorto(pago.fecha) : "—"}</p>
+          <p className={`tarjeta-bento-stat-value ${atrasado ? "aviso" : ""}`}>
+            {hayPago ? textoRecordatorio(tarjeta.estado, tarjeta.dias) : "—"}
+          </p>
         </div>
         <div className="tarjeta-bento-corte">
           <div>

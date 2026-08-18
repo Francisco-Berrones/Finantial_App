@@ -7,13 +7,14 @@ import { useTarjetas } from "./features/tarjetas/useTarjetas";
 import { useMovimientos } from "./features/movimientos/useMovimientos";
 import { useCategorias } from "./features/categorias/useCategorias";
 import { useSuscripciones } from "./features/suscripciones/useSuscripciones";
-import { useMsiActivas } from "./features/tarjetas/useMsiActivas";
+import { useRecordatorios } from "./features/recordatorios/useRecordatorios";
 import InicioView from "./pages/InicioView";
 import HistorialView from "./features/movimientos/HistorialView";
 import CuentasView from "./pages/CuentasView";
 import NuevaCuentaView from "./pages/NuevaCuentaView";
 import SuscripcionesView from "./pages/SuscripcionesView";
 import SuscripcionesPendientesModal from "./features/suscripciones/SuscripcionesPendientesModal";
+import RecordatoriosView from "./features/recordatorios/RecordatoriosView";
 import NuevoMovimientoView from "./features/movimientos/NuevoMovimientoView";
 import TarjetaDetalleView from "./features/tarjetas/TarjetaDetalleView";
 import AsesorChatView from "./features/asesor/AsesorChatView";
@@ -26,7 +27,7 @@ export default function MainApp({ session }) {
   const { movimientos, fetchMovimientos, commitMovimiento, deleteMovimiento, commitPagoTarjeta } = useMovimientos();
   const { categorias, fetchCategorias, addCategoria } = useCategorias();
   const { suscripciones, fetchSuscripciones, addSuscripcion, deleteSuscripcion, confirmarCobro } = useSuscripciones();
-  const { msiActivas, fetchMsiActivas } = useMsiActivas();
+  const { recordatorios, fetchRecordatorios } = useRecordatorios();
 
   const [view, setView] = useState("inicio");
   const [cargando, setCargando] = useState(true);
@@ -46,9 +47,9 @@ export default function MainApp({ session }) {
   const pendientesSuscripciones = suscripciones.filter((s) => s.pendiente_confirmar);
 
   const fetchAll = useCallback(async () => {
-    await Promise.all([fetchCuentas(), fetchTarjetas(), fetchMovimientos(), fetchCategorias(), fetchSuscripciones(), fetchMsiActivas()]);
+    await Promise.all([fetchCuentas(), fetchTarjetas(), fetchMovimientos(), fetchCategorias(), fetchSuscripciones(), fetchRecordatorios()]);
     setCargando(false);
-  }, [fetchCuentas, fetchTarjetas, fetchMovimientos, fetchCategorias, fetchSuscripciones, fetchMsiActivas]);
+  }, [fetchCuentas, fetchTarjetas, fetchMovimientos, fetchCategorias, fetchSuscripciones, fetchRecordatorios]);
 
   const crearCategoria = async (nombre, { icono, color } = {}) => {
     const creada = await addCategoria({ nombre, userId: session.user.id, icono, color });
@@ -83,6 +84,14 @@ export default function MainApp({ session }) {
       targetTipo: suscripcion.target_tipo,
     });
     setView("nuevoMovimiento");
+  };
+
+  // recordatorios_pendientes no trae target_tipo (no lo necesita para
+  // ordenar/mostrar) -- se busca la suscripción completa ya cargada por su id
+  // para reusar el mismo flujo de pago que el resto de la app.
+  const abrirPagoRecordatorio = (recordatorio) => {
+    const suscripcion = suscripciones.find((s) => String(s.id) === String(recordatorio.id));
+    if (suscripcion) abrirPagoSuscripcion(suscripcion);
   };
 
   const screenVariants = {
@@ -298,6 +307,15 @@ export default function MainApp({ session }) {
           onBack={() => setView("cuentas")}
         />
         </motion.div>
+      ) : view === "recordatorios" ? (
+        <motion.div key="recordatorios" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
+        <RecordatoriosView
+          recordatorios={recordatorios}
+          onVerTarjeta={abrirDetalleTarjeta}
+          onPagar={abrirPagoRecordatorio}
+          onBack={() => setView("cuentas")}
+        />
+        </motion.div>
       ) : view === "tarjetaDetalle" ? (
         <motion.div key="tarjetaDetalle" variants={screenVariants} initial="initial" animate="animate" exit="exit" transition={{ duration: 0.22, ease: "easeOut" }}>
         <TarjetaDetalleView
@@ -341,12 +359,13 @@ export default function MainApp({ session }) {
                     cuentas={cuentas}
                     tarjetas={tarjetas}
                     movimientos={movimientos}
-                    msiActivas={msiActivas}
+                    recordatorios={recordatorios}
                     onNavigateCuentas={() => setView("cuentas")}
                     onVerTarjeta={abrirDetalleTarjeta}
                     onAbrirResumen={() => setView("resumen")}
                     onAbrirHistorial={() => setView("historial")}
                     onPagarTarjeta={abrirPagoTarjeta}
+                    onPagarSuscripcion={abrirPagoRecordatorio}
                   />
                 </motion.div>
               )}
@@ -377,10 +396,10 @@ export default function MainApp({ session }) {
                     onChange={fetchAll}
                     onVerTarjeta={abrirDetalleTarjeta}
                     onPagarTarjeta={abrirPagoTarjeta}
-                    movimientos={movimientos}
-                    msiActivas={msiActivas}
                     suscripciones={suscripciones}
                     onAbrirSuscripciones={() => setView("suscripciones")}
+                    recordatorios={recordatorios}
+                    onAbrirRecordatorios={() => setView("recordatorios")}
                     onAbrirNuevaCuenta={() => setView("nuevaCuenta")}
                   />
                 </motion.div>

@@ -5,12 +5,18 @@ export function useTarjetas() {
   const [tarjetas, setTarjetas] = useState([]);
 
   const fetchTarjetas = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("tarjetas")
-      .select("*")
-      .order("fecha_creacion");
-    if (error) console.error(error);
-    setTarjetas(data || []);
+    // tarjetas_estado no es superset de tarjetas (le faltan columnas como
+    // color/fecha_creacion), así que se combinan: tarjetas para los datos base
+    // y el orden de creación, tarjetas_estado para `estado`/`dias` -- misma
+    // fuente de verdad que usa recordatorios_pendientes.
+    const [{ data: base, error: errorBase }, { data: estados, error: errorEstado }] = await Promise.all([
+      supabase.from("tarjetas").select("*").order("fecha_creacion"),
+      supabase.from("tarjetas_estado").select("id, estado, fecha_referencia, dias"),
+    ]);
+    if (errorBase) console.error(errorBase);
+    if (errorEstado) console.error(errorEstado);
+    const estadoPorId = new Map((estados || []).map((e) => [e.id, e]));
+    setTarjetas((base || []).map((t) => ({ ...t, ...(estadoPorId.get(t.id) || {}) })));
   }, []);
 
   const addTarjeta = useCallback(async ({ nombre, banco, lineaTotal, saldoUsado, diaCorte, diaPago, color, userId }) => {

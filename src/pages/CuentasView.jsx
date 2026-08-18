@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import CuentasManager from "../features/cuentas/CuentasManager";
 import TarjetasManager from "../features/tarjetas/TarjetasManager";
 import SuscripcionesLinkCard from "../features/suscripciones/SuscripcionesLinkCard";
+import RecordatoriosLinkCard from "../features/recordatorios/RecordatoriosLinkCard";
 import TipoActivoModal from "../features/cuentas/TipoActivoModal";
 
 export default function CuentasView({
@@ -15,10 +16,10 @@ export default function CuentasView({
   onChange,
   onVerTarjeta,
   onPagarTarjeta,
-  movimientos,
-  msiActivas,
   suscripciones,
   onAbrirSuscripciones,
+  recordatorios,
+  onAbrirRecordatorios,
   onAbrirNuevaCuenta,
 }) {
   const tarjetasSectionRef = useRef(null);
@@ -79,11 +80,10 @@ export default function CuentasView({
           onChange={onChange}
           onVerTarjeta={onVerTarjeta}
           onPagarTarjeta={onPagarTarjeta}
-          movimientos={movimientos}
-          msiActivas={msiActivas}
         />
       </div>
 
+      <RecordatoriosLinkCard recordatorios={recordatorios} onClick={onAbrirRecordatorios} />
       <SuscripcionesLinkCard suscripciones={suscripciones} onClick={onAbrirSuscripciones} />
 
       {mostrarTipoModal && (

@@ -1,7 +1,7 @@
-import { CreditCard, TrendingDown, TrendingUp } from "lucide-react";
+import { CreditCard, Repeat, TrendingDown, TrendingUp } from "lucide-react";
 import { fmt } from "../shared/format";
+import { textoRecordatorio } from "../shared/dateUtils";
 import { iconoPorCategoria } from "../shared/categoriaIconos";
-import { proximaTarjetaAPagar } from "../shared/calcularPagoTarjeta";
 import MovimientoCard from "../features/movimientos/MovimientoCard";
 
 const TIPOS_GASTO = ["gasto_credito", "gasto_debito", "pago_tarjeta"];
@@ -59,7 +59,7 @@ function calcularMayorCategoria(movimientos) {
   return { nombre, total, cambioPct, ultimosMeses, maxUltimosMeses };
 }
 
-export default function InicioView({ cuentas, tarjetas, movimientos, msiActivas = [], onNavigateCuentas, onVerTarjeta, onAbrirResumen, onAbrirHistorial, onPagarTarjeta }) {
+export default function InicioView({ cuentas, tarjetas, movimientos, recordatorios = [], onNavigateCuentas, onVerTarjeta, onAbrirResumen, onAbrirHistorial, onPagarTarjeta, onPagarSuscripcion }) {
   const totalAhorro = cuentas.reduce((s, c) => s + Math.max(0, Number(c.saldo) || 0), 0);
   const hayCuentas = cuentas.length > 0;
   const hayTarjetas = tarjetas.length > 0;
@@ -75,7 +75,7 @@ export default function InicioView({ cuentas, tarjetas, movimientos, msiActivas 
   const totalGastosMes = movimientosMes.filter((m) => TIPOS_GASTO.includes(m.tipo_accion)).reduce((s, m) => s + Number(m.monto), 0);
   const maxFlujoMes = Math.max(totalIngresosMes, totalGastosMes, 1);
 
-  const proximoVencimiento = proximaTarjetaAPagar(tarjetas, movimientos, msiActivas);
+  const destacado = recordatorios[0] || null;
 
   return (
     <div className="inicio-nuevo-root">
@@ -129,12 +129,13 @@ export default function InicioView({ cuentas, tarjetas, movimientos, msiActivas 
         .inicio-balance-barra { height: 100%; border-radius: 9999px; background: var(--primary); }
         .inicio-balance-barra.gastos { background: var(--outline); }
 
-        .inicio-vencimiento-card { background: var(--primary-container); color: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 16px rgba(19,27,46,0.25); }
-        .inicio-vencimiento-eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.7); margin-bottom: 12px; }
-        .inicio-vencimiento-titulo { font-size: 16px; font-weight: 600; color: #fff; margin: 0 0 4px; }
-        .inicio-vencimiento-monto { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
-        .inicio-vencimiento-btn { margin-top: 16px; width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
-        .inicio-vencimiento-btn:active { background: rgba(255,255,255,0.2); }
+        .inicio-recordatorio-card { background: var(--primary-container); color: #fff; border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 6px 16px rgba(19,27,46,0.25); }
+        .inicio-recordatorio-card.atrasado { background: var(--credito, #A8412B); box-shadow: 0 6px 16px rgba(168,65,43,0.3); }
+        .inicio-recordatorio-eyebrow { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.7); margin-bottom: 12px; }
+        .inicio-recordatorio-titulo { font-size: 16px; font-weight: 600; color: #fff; margin: 0 0 4px; }
+        .inicio-recordatorio-monto { font-size: 28px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+        .inicio-recordatorio-btn { margin-top: 16px; width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .inicio-recordatorio-btn:active { background: rgba(255,255,255,0.2); }
 
         .inicio-empty { color: var(--on-surface-variant); font-size: 14px; text-align: center; padding: 20px; border: 1.5px dashed var(--outline-variant); border-radius: 12px; margin-bottom: 20px; }
         .inicio-empty button { margin-top: 12px; background: var(--primary); color: var(--on-primary); border: none; border-radius: 10px; padding: 10px 18px; font-family: Inter, sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -218,27 +219,33 @@ export default function InicioView({ cuentas, tarjetas, movimientos, msiActivas 
             </div>
           </section>
 
-          {proximoVencimiento && (
-            <div className="inicio-vencimiento-card" data-testid="inicio-vencimiento-card">
-              <div className="inicio-vencimiento-eyebrow">
-                <CreditCard size={16} /> Próximo vencimiento
+          {destacado && (
+            <div
+              className={`inicio-recordatorio-card ${destacado.estado === "atrasado" ? "atrasado" : ""}`}
+              data-testid="inicio-recordatorio-card"
+            >
+              <div className="inicio-recordatorio-eyebrow">
+                {destacado.tipo === "tarjeta" ? <CreditCard size={16} /> : <Repeat size={16} />}
+                {destacado.estado === "atrasado" ? "Recordatorio atrasado" : "Próximo recordatorio"}
               </div>
               <div
-                onClick={() => onVerTarjeta(proximoVencimiento.tarjeta.id)}
-                style={{ cursor: "pointer" }}
-                data-testid="inicio-vencimiento-ver-tarjeta"
+                onClick={destacado.tipo === "tarjeta" ? () => onVerTarjeta(destacado.id) : undefined}
+                style={destacado.tipo === "tarjeta" ? { cursor: "pointer" } : undefined}
+                data-testid="inicio-recordatorio-ver"
               >
-                <h3 className="inicio-vencimiento-titulo">
-                  {proximoVencimiento.tarjeta.nombre} · {proximoVencimiento.pago.dias === 0 ? "hoy" : `en ${proximoVencimiento.pago.dias} días`}
+                <h3 className="inicio-recordatorio-titulo">
+                  {destacado.nombre} · {textoRecordatorio(destacado.estado, destacado.dias)}
                 </h3>
-                <p className="inicio-vencimiento-monto mono">{fmt(proximoVencimiento.pago.monto)}</p>
+                <p className="inicio-recordatorio-monto mono">{fmt(destacado.monto)}</p>
               </div>
               <button
-                className="inicio-vencimiento-btn"
+                className="inicio-recordatorio-btn"
                 data-testid="inicio-pagar-ahora-button"
-                onClick={() => onPagarTarjeta(proximoVencimiento.tarjeta.id)}
+                onClick={() =>
+                  destacado.tipo === "tarjeta" ? onPagarTarjeta(destacado.id) : onPagarSuscripcion(destacado)
+                }
               >
-                Pagar Ahora
+                Pagar
               </button>
             </div>
           )}
