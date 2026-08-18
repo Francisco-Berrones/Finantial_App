@@ -1,4 +1,4 @@
-import { Car, Dumbbell, Film, GraduationCap, HeartPulse, Heart, Home, Landmark, Package, Plane, ShoppingBag, Stethoscope, Tag, Utensils, Wallet, Zap } from "lucide-react";
+import { Car, Dumbbell, Film, Fuel, GraduationCap, HeartPulse, Heart, Home, Landmark, Package, Plane, Repeat, ShoppingBag, ShoppingCart, Stethoscope, Tag, Utensils, Wallet, Zap } from "lucide-react";
 
 const ESTILOS = {
   comida: { icon: Utensils, bg: "#FFE4E1", color: "#B22222" },
@@ -9,6 +9,9 @@ const ESTILOS = {
   compras: { icon: ShoppingBag, bg: "#F1F8E9", color: "#33691E" },
   otros: { icon: Package, bg: "#ECEFF1", color: "#455A64" },
   deuda: { icon: Landmark, bg: "#E8EAF6", color: "#1A237E" },
+  suscripciones: { icon: Repeat, bg: "#EDE7F6", color: "#5E35B1" },
+  mandado: { icon: ShoppingCart, bg: "#FFF8E1", color: "#F9A825" },
+  gasolina: { icon: Fuel, bg: "#FBE9E7", color: "#D84315" },
 };
 
 const DEFAULT_ESTILO = { icon: Tag, bg: "#F5F5F5", color: "#616161" };
@@ -24,6 +27,9 @@ export const ICONOS_DISPONIBLES = [
   { key: "flight", label: "Viajes", icon: Plane },
   { key: "school", label: "Escuela", icon: GraduationCap },
   { key: "payments", label: "Pagos", icon: Wallet },
+  { key: "subscriptions", label: "Suscripciones", icon: Repeat },
+  { key: "shopping_cart", label: "Mandado", icon: ShoppingCart },
+  { key: "local_gas_station", label: "Gasolina", icon: Fuel },
 ];
 
 const ICONOS_MAP = Object.fromEntries(ICONOS_DISPONIBLES.map((i) => [i.key, i.icon]));
